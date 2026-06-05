@@ -1,0 +1,740 @@
+openapi: 3.0.3
+info:
+  title: Agenda Feature API
+  description: |
+    API specification for the Agenda feature.
+
+    The agenda feature allows users to:
+    - View upcoming agendas in a chronological list (server-side paginated)
+    - Scroll backward to view past agendas
+    - Drill into agenda details and manage associated events
+    - Update event status (completed/cancelled) within an agenda
+
+    All times are in UTC (timestamptz). Pagination supports cursor-based or offset-based strategies.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://api.example.com/api
+    description: Production
+
+paths:
+  /agendas:
+    get:
+      operationId: listAgendas
+      tags:
+        - Agendas
+      summary: List agendas with server-side pagination
+      description: |
+        Returns a paginated list of agendas. By default, returns future agendas (startAt >= now).
+        Use the `direction` parameter to fetch past agendas or control sort direction.
+
+        Pagination:
+        - Offset-based: Use `limit` and `offset` query parameters
+        - Cursor-based (future): Use `cursor` and `limit`
+
+        Direction:
+        - `forward`: Returns agendas from startAt onwards (default, sort ASC)
+        - `backward`: Returns agendas before current timestamp (sort DESC for past review)
+      parameters:
+        - name: limit
+          in: query
+          description: Number of agendas per page (default 20, max 100)
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 20
+        - name: offset
+          in: query
+          description: Number of agendas to skip (default 0)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          example: 0
+        - name: direction
+          in: query
+          description: Sort direction (forward=future by default, backward=past)
+          schema:
+            type: string
+            enum: [forward, backward]
+            default: forward
+          example: forward
+        - name: status
+          in: query
+          description: Filter by agenda status (active, completed, cancelled)
+          schema:
+            type: string
+            enum: [active, completed, cancelled]
+          example: active
+        - name: includeSoftDeleted
+          in: query
+          description: Include soft-deleted agendas (default false)
+          schema:
+            type: boolean
+            default: false
+          example: false
+      responses:
+        '200':
+          description: Successfully retrieved agendas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Agenda'
+                  meta:
+                    type: object
+                    properties:
+                      limit:
+                        type: integer
+                        example: 20
+                      offset:
+                        type: integer
+                        example: 0
+                      total:
+                        type: integer
+                        description: Total count of agendas matching filters
+                        example: 42
+                      hasMore:
+                        type: boolean
+                        description: Whether more agendas exist beyond current page
+                        example: true
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      operationId: createAgenda
+      tags:
+        - Agendas
+      summary: Create a new agenda
+      description: Creates a new agenda with optional initial events.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAgendaRequest'
+      responses:
+        '201':
+          description: Agenda created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Agenda'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agendas/{id}:
+    get:
+      operationId: getAgenda
+      tags:
+        - Agendas
+      summary: Get agenda details
+      description: Retrieves full details of a single agenda including metadata.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Agenda ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agenda found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Agenda'
+        '404':
+          description: Agenda not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      operationId: updateAgenda
+      tags:
+        - Agendas
+      summary: Update agenda details
+      description: Partially updates an agenda (title, description, status, etc.).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Agenda ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAgendaRequest'
+      responses:
+        '200':
+          description: Agenda updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Agenda'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Agenda not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      operationId: deleteAgenda
+      tags:
+        - Agendas
+      summary: Delete an agenda (soft delete)
+      description: |
+        Soft-deletes an agenda by setting deleted_at timestamp.
+        Use `permanent=true` query param to hard-delete (be careful!).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Agenda ID (UUID)
+          schema:
+            type: string
+            format: uuid
+        - name: permanent
+          in: query
+          description: If true, permanently deletes the agenda (hard delete)
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '204':
+          description: Agenda deleted successfully
+        '404':
+          description: Agenda not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agendas/{id}/events:
+    get:
+      operationId: listAgendaEvents
+      tags:
+        - Agendas
+      summary: List events within an agenda
+      description: |
+        Returns a paginated list of events belonging to a specific agenda.
+        By default, returns future events (startAt >= now) sorted by startAt.
+        Use `direction=backward` to fetch past events of this agenda.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Agenda ID (UUID)
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Number of events per page (default 20, max 100)
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of events to skip (default 0)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: direction
+          in: query
+          description: Sort direction (forward=future by default, backward=past)
+          schema:
+            type: string
+            enum: [forward, backward]
+            default: forward
+        - name: includeCompleted
+          in: query
+          description: Include completed events (default true)
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Successfully retrieved events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  meta:
+                    type: object
+                    properties:
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                      total:
+                        type: integer
+                      hasMore:
+                        type: boolean
+        '404':
+          description: Agenda not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      operationId: addEventToAgenda
+      tags:
+        - Agendas
+      summary: Add an event to an agenda
+      description: Associates an existing event with an agenda.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Agenda ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventId:
+                  type: string
+                  format: uuid
+                  description: Event ID to associate with agenda
+                displayOrder:
+                  type: integer
+                  description: Optional display order in agenda (default 0)
+                  default: 0
+              required:
+                - eventId
+      responses:
+        '201':
+          description: Event added to agenda successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      agendaId:
+                        type: string
+                        format: uuid
+                      eventId:
+                        type: string
+                        format: uuid
+        '400':
+          description: Validation error (e.g., event already in agenda)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Agenda or event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Event already associated with this agenda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agendas/{agendaId}/events/{eventId}:
+    delete:
+      operationId: removeEventFromAgenda
+      tags:
+        - Agendas
+      summary: Remove an event from an agenda
+      description: Disassociates an event from an agenda (does not delete the event itself).
+      parameters:
+        - name: agendaId
+          in: path
+          required: true
+          description: Agenda ID (UUID)
+          schema:
+            type: string
+            format: uuid
+        - name: eventId
+          in: path
+          required: true
+          description: Event ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Event removed from agenda successfully
+        '404':
+          description: Agenda or event association not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /events/{id}/status:
+    patch:
+      operationId: updateEventStatus
+      tags:
+        - Events (Agenda Context)
+      summary: Update event status (completed or cancelled)
+      description: |
+        Updates an event's completion or cancellation status.
+        This endpoint extends the existing event status management for use within agendas.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Event ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isCompleted:
+                  type: boolean
+                  description: Whether the event is completed
+                  example: true
+                isCancelled:
+                  type: boolean
+                  description: Whether the event is cancelled
+                  example: false
+              required:
+                - isCompleted
+      responses:
+        '200':
+          description: Event status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Event'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Agenda:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique agenda identifier
+        title:
+          type: string
+          maxLength: 255
+          description: Agenda title
+          example: Q2 Planning & Review
+        description:
+          type: string
+          nullable: true
+          description: Optional longer description
+          example: Quarterly planning session with key stakeholders
+        startAt:
+          type: string
+          format: date-time
+          description: Agenda start date/time (ISO 8601, UTC)
+          example: '2026-06-15T09:00:00Z'
+        endAt:
+          type: string
+          format: date-time
+          description: Agenda end date/time (ISO 8601, UTC)
+          example: '2026-06-15T17:00:00Z'
+        status:
+          type: string
+          enum: [active, completed, cancelled]
+          description: Agenda lifecycle status
+          example: active
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Soft delete timestamp (null if not deleted)
+        createdAt:
+          type: string
+          format: date-time
+          description: Record creation timestamp (ISO 8601, UTC)
+        updatedAt:
+          type: string
+          format: date-time
+          description: Record last update timestamp (ISO 8601, UTC)
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique event identifier
+        title:
+          type: string
+          maxLength: 255
+          description: Event title
+          example: Team standup
+        description:
+          type: string
+          nullable: true
+          description: Optional event description
+        startAt:
+          type: string
+          format: date-time
+          description: Event start date/time (ISO 8601, UTC)
+          example: '2026-06-15T09:00:00Z'
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Event end date/time (ISO 8601, UTC)
+          example: '2026-06-15T09:30:00Z'
+        allDay:
+          type: boolean
+          description: Whether this is an all-day event
+          example: false
+        isCompleted:
+          type: boolean
+          description: Whether the event is marked complete
+          example: false
+        isCancelled:
+          type: boolean
+          description: Whether the event is marked cancelled
+          example: false
+        reminderMinutesBefore:
+          type: integer
+          nullable: true
+          description: Minutes before event to trigger reminder
+          example: 15
+        tag:
+          type: string
+          enum: [personal, work, health, shopping, other]
+          description: Event tag/category
+          example: work
+        createdAt:
+          type: string
+          format: date-time
+          description: Record creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Record last update timestamp
+
+    CreateAgendaRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          description: Agenda title (required)
+          example: Q2 Planning
+        description:
+          type: string
+          nullable: true
+          description: Optional agenda description
+          example: Quarterly review and planning
+        startAt:
+          type: string
+          format: date-time
+          description: Agenda start date/time (ISO 8601, UTC)
+          example: '2026-06-15T09:00:00Z'
+        endAt:
+          type: string
+          format: date-time
+          description: Agenda end date/time (ISO 8601, UTC)
+          example: '2026-06-15T17:00:00Z'
+        eventIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+          description: Optional list of event IDs to associate with agenda
+          example: []
+      required:
+        - title
+        - startAt
+        - endAt
+
+    UpdateAgendaRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          description: Updated agenda title
+          example: Q2 Planning (Updated)
+        description:
+          type: string
+          nullable: true
+          description: Updated agenda description
+        startAt:
+          type: string
+          format: date-time
+          description: Updated start date/time
+        endAt:
+          type: string
+          format: date-time
+          description: Updated end date/time
+        status:
+          type: string
+          enum: [active, completed, cancelled]
+          description: Updated status
+          example: active
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code or type
+          example: validation_error
+        message:
+          type: string
+          description: Human-readable error message
+          example: Title is required
+        details:
+          type: array
+          items:
+            type: object
+          nullable: true
+          description: Additional error details
+          example:
+            - field: title
+              message: must not be empty
+
+    PaginationMeta:
+      type: object
+      properties:
+        limit:
+          type: integer
+          description: Items per page
+        offset:
+          type: integer
+          description: Items skipped
+        total:
+          type: integer
+          description: Total items matching filters
+        hasMore:
+          type: boolean
+          description: Whether more items exist

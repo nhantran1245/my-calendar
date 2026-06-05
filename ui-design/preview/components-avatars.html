@@ -1,0 +1,37 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>body { min-height: 200px; }</style>
+</head>
+<body>
+
+<style>
+  .av { width:40px; height:40px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-sans); font-weight:500; font-size:14px; color:#fff; flex-shrink:0 }
+  .stack { display:flex }
+  .stack .av { margin-left:-8px; border:2px solid var(--bg-page) }
+  .stack .av:first-child { margin-left:0 }
+</style>
+<div class="col" style="gap:18px">
+  <div class="row" style="gap:10px">
+    <div class="av" style="background:#7C8B5C">MO</div>
+    <div class="av" style="background:#C95A3D">JK</div>
+    <div class="av" style="background:#6B86B4">AY</div>
+    <div class="av" style="background:#A8472F">RD</div>
+    <div class="av" style="background:var(--slate-7)">+3</div>
+  </div>
+  <div class="row" style="gap:14px; align-items:center">
+    <div class="stack">
+      <div class="av" style="background:#7C8B5C; width:28px; height:28px; font-size:11px">MO</div>
+      <div class="av" style="background:#C95A3D; width:28px; height:28px; font-size:11px">JK</div>
+      <div class="av" style="background:#6B86B4; width:28px; height:28px; font-size:11px">AY</div>
+      <div class="av" style="background:var(--slate-3); color:var(--fg-1); width:28px; height:28px; font-size:11px">+5</div>
+    </div>
+    <div class="t-caption">8 attendees</div>
+  </div>
+</div>
+<div class="label" style="margin-top:14px">Avatars — 40px solo, 28px stacked, 2-letter initials in Geist Medium. Background colors are user-deterministic.</div>
+
+</body>
+</html>

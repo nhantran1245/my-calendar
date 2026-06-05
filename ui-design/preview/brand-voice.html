@@ -1,0 +1,37 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>body { min-height: 220px; }</style>
+</head>
+<body>
+
+<style>
+  .row-ex { display:grid; grid-template-columns: 1fr 24px 1fr; gap:14px; align-items:center; margin-bottom:10px }
+  .col-bad, .col-good { padding:10px 12px; border-radius:8px; font-family:var(--font-sans); font-size:14px }
+  .col-bad { background:var(--danger-tint); color:var(--clay-700); text-decoration: line-through; opacity:0.9 }
+  .col-good { background:var(--success-tint); color:var(--sage-700); font-weight:500 }
+  .arrow { color:var(--fg-3); text-align:center }
+</style>
+<div>
+  <div class="row-ex">
+    <div class="col-bad">🎉 Awesome! Event created!</div>
+    <div class="arrow">→</div>
+    <div class="col-good">Saved.</div>
+  </div>
+  <div class="row-ex">
+    <div class="col-bad">You have 3 upcoming events today!</div>
+    <div class="arrow">→</div>
+    <div class="col-good">3 events today.</div>
+  </div>
+  <div class="row-ex">
+    <div class="col-bad">Oops! Something went wrong.</div>
+    <div class="arrow">→</div>
+    <div class="col-good">Couldn't reach Google. Retry?</div>
+  </div>
+</div>
+<div class="label" style="margin-top:14px">Voice — calm, lowercase-friendly, never corporate. No emoji in product UI.</div>
+
+</body>
+</html>

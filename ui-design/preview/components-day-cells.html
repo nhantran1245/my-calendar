@@ -1,0 +1,30 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>body { min-height: 170px; }</style>
+</head>
+<body>
+
+<style>
+  .cell { display:flex; flex-direction:column; align-items:center; gap:6px; width:48px; padding:8px 0; border-radius:8px }
+  .cell .dow { font-family:var(--font-sans); font-size:11px; color:var(--fg-2); text-transform:uppercase; letter-spacing:0.06em }
+  .cell .num { font-family:var(--font-serif); font-size:24px; line-height:1; color:var(--fg-0) }
+  .cell.today .num { color:var(--accent-fg); background:var(--accent); width:32px; height:32px; border-radius:999px; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-sm) }
+  .cell.muted .num { color:var(--fg-3) }
+  .cell.has-events::after { content:""; display:block; width:4px; height:4px; border-radius:999px; background:var(--accent); margin-top:-2px }
+</style>
+<div class="row" style="gap:4px; padding:6px 0">
+  <div class="cell"><div class="dow">Mon</div><div class="num">11</div></div>
+  <div class="cell has-events"><div class="dow">Tue</div><div class="num">12</div></div>
+  <div class="cell has-events"><div class="dow">Wed</div><div class="num">13</div></div>
+  <div class="cell today has-events"><div class="dow" style="color:var(--accent)">Thu</div><div class="num">14</div></div>
+  <div class="cell"><div class="dow">Fri</div><div class="num">15</div></div>
+  <div class="cell has-events"><div class="dow">Sat</div><div class="num">16</div></div>
+  <div class="cell muted"><div class="dow">Sun</div><div class="num">17</div></div>
+</div>
+<div class="label" style="margin-top:14px">Day cells — serif numerals, today gets a filled ember pip, busy days carry a 4px dot.</div>
+
+</body>
+</html>

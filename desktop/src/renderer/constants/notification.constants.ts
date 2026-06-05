@@ -1,0 +1,4 @@
+export const DND_MIN_MINUTES = 1;
+export const DND_MAX_MINUTES = 1440;
+export const NOTIFICATIONS_DEFAULT_PAGE_SIZE = 50;
+export const NOTIFICATION_SSE_RECONNECT_DELAY_MS = 3_000;

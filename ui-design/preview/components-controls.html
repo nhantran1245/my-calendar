@@ -1,0 +1,34 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>body { min-height: 180px; }</style>
+</head>
+<body>
+
+<style>
+  .toggle { width:36px; height:20px; border-radius:999px; background:var(--bg-2); position:relative; cursor:pointer; transition:background var(--dur-fast) var(--ease-out); display:inline-block; vertical-align:middle }
+  .toggle::after { content:""; position:absolute; left:2px; top:2px; width:16px; height:16px; background:#fff; border-radius:999px; box-shadow:var(--shadow-sm); transition:left var(--dur-fast) var(--ease-out) }
+  .toggle.on { background:var(--accent) }
+  .toggle.on::after { left:18px }
+  .check { width:18px; height:18px; border-radius:4px; border:1.5px solid var(--border-strong); display:inline-flex; align-items:center; justify-content:center; vertical-align:middle }
+  .check.on { background:var(--accent); border-color:var(--accent); color:#fff }
+  .row-item { display:flex; align-items:center; gap:10px; font-family:var(--font-sans); font-size:14px; color:var(--fg-0) }
+</style>
+<div class="col" style="gap:14px">
+  <div class="row" style="gap:24px">
+    <div class="row-item"><span class="toggle on"></span> Notifications on</div>
+    <div class="row-item"><span class="toggle"></span> 24-hour time</div>
+  </div>
+  <div class="row" style="gap:24px">
+    <div class="row-item"><span class="check on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="20 6 9 17 4 12"/></svg></span> Work</div>
+    <div class="row-item"><span class="check on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="20 6 9 17 4 12"/></svg></span> Personal</div>
+    <div class="row-item"><span class="check"></span> Family</div>
+    <div class="row-item"><span class="check"></span> Holidays</div>
+  </div>
+</div>
+<div class="label" style="margin-top:14px">Toggles &amp; checkboxes — 20px toggle, 18px check, accent fills the "on" state.</div>
+
+</body>
+</html>

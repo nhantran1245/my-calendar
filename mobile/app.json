@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "My Calendar",
+    "slug": "my-calendar",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "mycalendar",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.personal.mycalendar",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.personal.mycalendar",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      "expo-font",
+      "expo-secure-store"
+    ]
+  }
+}

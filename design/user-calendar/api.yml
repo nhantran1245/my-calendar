@@ -1,0 +1,489 @@
+openapi: 3.0.0
+info:
+  title: User Calendar API
+  description: REST API endpoints for the user calendar feature (month view, event CRUD)
+  version: 1.0.0
+  contact:
+    name: Calendar Team
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://api.calendar.local/api
+    description: Production
+
+paths:
+  /events:
+    get:
+      summary: List events for a specific month
+      description: |
+        Retrieve all events for a given month. Used by the calendar view to populate the month grid.
+        Results are ordered by start time (ascending).
+      operationId: listEventsByMonth
+      tags:
+        - Events
+      parameters:
+        - name: year
+          in: query
+          description: Calendar year (e.g., 2026)
+          required: true
+          schema:
+            type: integer
+            example: 2026
+        - name: month
+          in: query
+          description: Calendar month (1–12, where 1 = January)
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 6
+        - name: includeCompleted
+          in: query
+          description: Include completed events in response (default true)
+          required: false
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: List of events for the month
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventResponse'
+                  meta:
+                    type: object
+                    properties:
+                      year:
+                        type: integer
+                      month:
+                        type: integer
+                      count:
+                        type: integer
+                        description: Total events in the month
+                example:
+                  data:
+                    - id: 550e8400-e29b-41d4-a716-446655440000
+                      title: Team standup
+                      description: Daily sync with the team
+                      startAt: 2026-06-01T09:00:00Z
+                      endAt: 2026-06-01T09:30:00Z
+                      allDay: false
+                      reminderMinutesBefore: 15
+                      isCompleted: false
+                      createdAt: 2026-05-20T10:00:00Z
+                      updatedAt: 2026-05-20T10:00:00Z
+                    - id: 550e8400-e29b-41d4-a716-446655440001
+                      title: Quarterly planning
+                      description: null
+                      startAt: 2026-06-15T09:00:00Z
+                      endAt: null
+                      allDay: true
+                      reminderMinutesBefore: null
+                      isCompleted: false
+                      createdAt: 2026-05-20T10:00:00Z
+                      updatedAt: 2026-05-20T10:00:00Z
+                  meta:
+                    year: 2026
+                    month: 6
+                    count: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create a new event
+      description: Create a new event in the calendar. Used by quick-add forms and full edit dialogs.
+      operationId: createEvent
+      tags:
+        - Events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /events/{id}:
+    get:
+      summary: Get event details
+      description: Retrieve full details of a single event by ID.
+      operationId: getEvent
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          description: Event ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Update an event
+      description: |
+        Update an existing event. Events with start dates in the past cannot be edited.
+        Partial updates are supported (only changed fields need to be provided).
+      operationId: updateEvent
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          description: Event ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Invalid request or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: validation_error
+                message: Cannot edit past events
+                details:
+                  - field: startAt
+                    message: Event start date is in the past
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    delete:
+      summary: Delete an event
+      description: |
+        Delete an event from the calendar. Requires confirmation from the user before calling this endpoint.
+      operationId: deleteEvent
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          description: Event ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Event deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{id}/complete:
+    patch:
+      summary: Toggle event completion status
+      description: |
+        Mark an event as completed or uncompleted. This endpoint allows quick toggling without fetching the full event.
+      operationId: toggleEventCompletion
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          description: Event ID (UUID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isCompleted:
+                  type: boolean
+                  description: New completion status
+              required:
+                - isCompleted
+              example:
+                isCompleted: true
+      responses:
+        '200':
+          description: Completion status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    EventResponse:
+      type: object
+      description: A calendar event
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique event identifier
+        title:
+          type: string
+          description: Event title (required, max 255 chars)
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: Event description (optional)
+        startAt:
+          type: string
+          format: date-time
+          description: Event start time (ISO 8601)
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Event end time (ISO 8601, optional)
+        allDay:
+          type: boolean
+          description: Whether event spans full day(s)
+          default: false
+        reminderMinutesBefore:
+          type: integer
+          nullable: true
+          description: Minutes before event to trigger reminder (0–1440)
+        isCompleted:
+          type: boolean
+          description: Whether event is marked as completed
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+          description: When the event was created (ISO 8601)
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the event was last updated (ISO 8601)
+      required:
+        - id
+        - title
+        - startAt
+        - allDay
+        - isCompleted
+        - createdAt
+        - updatedAt
+
+    CreateEventRequest:
+      type: object
+      description: Request body for creating a new event
+      properties:
+        title:
+          type: string
+          description: Event title (required, max 255 chars)
+          maxLength: 255
+          minLength: 1
+        description:
+          type: string
+          nullable: true
+          description: Event description (optional)
+        startAt:
+          type: string
+          format: date-time
+          description: Event start time (ISO 8601, required)
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Event end time (ISO 8601, optional)
+        allDay:
+          type: boolean
+          description: Whether event spans full day(s) (default false)
+          default: false
+        reminderMinutesBefore:
+          type: integer
+          nullable: true
+          description: Minutes before event to trigger reminder (0–1440, optional)
+          minimum: 0
+          maximum: 1440
+      required:
+        - title
+        - startAt
+      example:
+        title: Team standup
+        description: Daily sync with the team
+        startAt: '2026-06-01T09:00:00Z'
+        endAt: '2026-06-01T09:30:00Z'
+        allDay: false
+        reminderMinutesBefore: 15
+
+    UpdateEventRequest:
+      type: object
+      description: Request body for updating an event (partial update, all fields optional)
+      properties:
+        title:
+          type: string
+          description: Event title (max 255 chars)
+          maxLength: 255
+          minLength: 1
+        description:
+          type: string
+          nullable: true
+          description: Event description
+        startAt:
+          type: string
+          format: date-time
+          description: Event start time (ISO 8601)
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Event end time (ISO 8601)
+        allDay:
+          type: boolean
+          description: Whether event spans full day(s)
+        reminderMinutesBefore:
+          type: integer
+          nullable: true
+          description: Minutes before event to trigger reminder (0–1440)
+          minimum: 0
+          maximum: 1440
+      example:
+        title: Updated event title
+        reminderMinutesBefore: 30
+
+    ErrorResponse:
+      type: object
+      description: Standard error response
+      properties:
+        error:
+          type: string
+          enum:
+            - validation_error
+            - not_found
+            - unauthorized
+            - conflict
+            - internal_error
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: Field name (if validation error)
+              message:
+                type: string
+                description: Field-specific error message
+          description: Additional details (for validation errors)
+      required:
+        - error
+        - message
+
+  responses:
+    BadRequest:
+      description: Invalid request or validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: validation_error
+            message: Validation failed
+            details:
+              - field: title
+                message: Title is required and must be 1–255 characters
+
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: unauthorized
+            message: Invalid or missing authentication token
+
+    NotFound:
+      description: Event not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: not_found
+            message: Event not found
+
+    Conflict:
+      description: Conflict (e.g., past event edit attempt)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: conflict
+            message: Cannot edit events in the past
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token in Authorization header
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Events
+    description: Event CRUD operations for the calendar feature

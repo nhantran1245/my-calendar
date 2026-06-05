@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: my-calendar-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-my_calendar}
+      POSTGRES_USER: ${POSTGRES_USER:-calendar_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-calendar_pass}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-calendar_user} -d ${POSTGRES_DB:-my_calendar}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  flyway:
+    image: flyway/flyway:10
+    platform: linux/amd64
+    container_name: my-calendar-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-my_calendar}
+      FLYWAY_USER: ${POSTGRES_USER:-calendar_user}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:-calendar_pass}
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+    volumes:
+      - ./db/migrations:/flyway/sql
+    command: migrate
+
+  backend:
+    build:
+      context: ./backend
+      target: development
+    container_name: my-calendar-backend
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${POSTGRES_DB:-my_calendar}
+      DATABASE_USER: ${POSTGRES_USER:-calendar_user}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-calendar_pass}
+      PORT: ${BACKEND_PORT:-3000}
+      NODE_ENV: development
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${BACKEND_PORT:-3000}:${BACKEND_PORT:-3000}"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run start:dev
+
+volumes:
+  postgres_data:

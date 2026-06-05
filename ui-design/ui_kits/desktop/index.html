@@ -1,0 +1,162 @@
+<!doctype html>
+<html data-theme="light" lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cadence — Desktop UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    background: var(--bg-page); color: var(--fg-0);
+    font-family: var(--font-sans);
+    padding: 32px 24px 64px;
+  }
+  .kit-header {
+    max-width: 1500px; margin: 0 auto 28px;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 32px;
+  }
+  .kit-title {
+    font-family: var(--font-serif); font-size: 48px;
+    line-height: 1; letter-spacing: -0.02em; color: var(--fg-0);
+  }
+  .kit-sub {
+    font-size: 14px; color: var(--fg-2); margin-top: 6px; max-width: 540px;
+  }
+  .theme-toggle {
+    display: inline-flex; align-items: center; padding: 4px;
+    background: var(--bg-1); border-radius: 999px; gap: 2px;
+  }
+  .theme-toggle button {
+    border: none; background: transparent; padding: 6px 14px;
+    border-radius: 999px; font-family: var(--font-sans); font-size: 13px;
+    font-weight: 500; color: var(--fg-2); cursor: pointer;
+  }
+  .theme-toggle button.active {
+    background: var(--bg-0); color: var(--fg-0); box-shadow: var(--shadow-sm);
+  }
+  .window-frame {
+    max-width: 1500px; margin: 0 auto;
+    border-radius: 14px; overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-page);
+  }
+  .app-shell {
+    display: flex; height: 800px; position: relative; overflow: hidden;
+    background: var(--bg-page);
+  }
+  .sidebar {
+    width: 240px; flex-shrink: 0;
+    border-right: 1px solid var(--border-subtle);
+    background: var(--bg-0);
+    padding: 18px 16px;
+    display: flex; flex-direction: column; gap: 22px;
+    overflow: auto;
+  }
+  .main {
+    flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  }
+  .main-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+  .empty-hint {
+    text-align: center; padding: 28px 12px;
+    color: var(--fg-2); font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="kit-header">
+  <div>
+    <div class="kit-title">cadence — desktop</div>
+    <div class="kit-sub">Full app shell: nav rail, sidebar, week / month grid, event inspector, and ⌘K quick-add. Click any event to inspect; press <kbd style="font-family:var(--font-mono); font-size:12px; padding:1px 6px; background:var(--bg-1); border-radius:4px">⌘ K</kbd> for new event.</div>
+  </div>
+  <div class="theme-toggle" id="theme-toggle">
+    <button data-theme="light" class="active">Light</button>
+    <button data-theme="dark">Dark</button>
+  </div>
+</div>
+
+<div class="window-frame" id="frame-host"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="browser-window.jsx"></script>
+<script type="text/babel" src="Components.jsx"></script>
+<script type="text/babel" src="Screens.jsx"></script>
+
+<script type="text/babel">
+function CadenceDesktopApp() {
+  const [view, setView] = React.useState('week');
+  const [viewMode, setViewMode] = React.useState('week');
+  const [event, setEvent] = React.useState(null);
+  const [quickAdd, setQuickAdd] = React.useState(false);
+  const [cals, setCals] = React.useState(desktopCalendars);
+
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault(); setQuickAdd(true);
+      } else if (e.key === 'Escape') {
+        setQuickAdd(false); setEvent(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const toggleCal = id => setCals(cs => cs.map(c => c.id === id ? { ...c, on: !c.on } : c));
+
+  return (
+    <div className="app-shell">
+      <NavRail view={view} onView={setView} />
+
+      <aside className="sidebar">
+        <button onClick={() => setQuickAdd(true)} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '8px 14px', borderRadius: 8, border: 'none',
+          background: 'var(--accent)', color: 'var(--accent-fg)',
+          fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 500,
+          cursor: 'pointer', alignSelf: 'flex-start',
+        }}>
+          <DesktopIcon name="plus" size={14} strokeWidth={2.2} />
+          New event
+        </button>
+        <MiniCalendar />
+        <CalendarList calendars={cals} onToggle={toggleCal} />
+        <div className="empty-hint">3 calendars synced · 2 min ago</div>
+      </aside>
+
+      <div className="main">
+        <AppHeader
+          title={viewMode === 'month' ? 'May' : 'May 11 – 17'}
+          subtitle="2026"
+          viewMode={viewMode}
+          onViewMode={setViewMode}
+          onQuickAdd={() => setQuickAdd(true)}
+        />
+        <div className="main-body">
+          {viewMode === 'month'
+            ? <MonthView onEventClick={(e) => setEvent({ ...e, start: 9.5, end: 10, where: 'Verve · 4th & Mission' })} />
+            : <WeekView onEventClick={setEvent} />}
+          {event && <EventInspector event={event} onClose={() => setEvent(null)} />}
+        </div>
+      </div>
+
+      {quickAdd && <QuickAddModal onClose={() => setQuickAdd(false)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('frame-host')).render(<CadenceDesktopApp />);
+
+// Theme toggle
+document.getElementById('theme-toggle').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-theme]'); if (!btn) return;
+  document.documentElement.dataset.theme = btn.dataset.theme;
+  document.querySelectorAll('#theme-toggle button').forEach(b => b.classList.toggle('active', b === btn));
+});
+</script>
+</body>
+</html>

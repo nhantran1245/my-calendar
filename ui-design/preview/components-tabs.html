@@ -1,0 +1,38 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>body { min-height: 200px; }</style>
+</head>
+<body>
+
+<style>
+  .seg { display:inline-flex; background:var(--bg-1); padding:3px; border-radius:8px; gap:2px }
+  .seg button {
+    border:none; background:transparent; padding:6px 14px; border-radius:6px;
+    font-family:var(--font-sans); font-size:13px; font-weight:500; color:var(--fg-2); cursor:pointer;
+    transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .seg button.active { background:var(--bg-0); color:var(--fg-0); box-shadow:var(--shadow-sm) }
+  .tabs { display:flex; gap:24px; border-bottom:1px solid var(--border); padding-bottom:0 }
+  .tabs a { font-family:var(--font-sans); font-size:14px; font-weight:500; color:var(--fg-2); padding:10px 0; border-bottom:2px solid transparent; margin-bottom:-1px; text-decoration:none }
+  .tabs a.active { color:var(--fg-0); border-color:var(--accent) }
+</style>
+<div class="col" style="gap:18px">
+  <div class="seg">
+    <button>Day</button>
+    <button class="active">Week</button>
+    <button>Month</button>
+    <button>Year</button>
+  </div>
+  <div class="tabs">
+    <a class="active">Upcoming</a>
+    <a>Past</a>
+    <a>Invites</a>
+  </div>
+</div>
+<div class="label" style="margin-top:14px">View-switcher segmented control + page tabs. Underline indicator on tabs is 2px ember.</div>
+
+</body>
+</html>

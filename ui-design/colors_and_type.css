@@ -1,0 +1,229 @@
+/*
+ * Cadence Design System — Master Token File
+ * Import this once at the root of any HTML prototype.
+ * Components reference semantic vars (--bg-0, --accent, etc.), never raw palette vars.
+ *
+ * Usage: <html data-theme="light"> or <html data-theme="dark">
+ */
+
+/* ─────────────────────────────────────────────────────────────
+ * 1. Fonts (Google Fonts CDN — swap for local .woff2 files in fonts/)
+ * ───────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400&family=Instrument+Serif:ital@0;1&display=swap');
+
+/* ─────────────────────────────────────────────────────────────
+ * 2. Palette — Slate (warm neutrals, faint green undertone)
+ * ───────────────────────────────────────────────────────────── */
+:root {
+  --slate-0:  #FAFAF8;
+  --slate-1:  #F4F4F1;
+  --slate-2:  #EBEBE6;
+  --slate-3:  #DDDDD6;
+  --slate-4:  #C7C7BE;
+  --slate-5:  #A8A89E;
+  --slate-6:  #898980;
+  --slate-7:  #6B6B63;
+  --slate-8:  #525249;
+  --slate-9:  #3E3E36;
+  --slate-10: #2C2C26;
+  --slate-11: #1E1E1A;
+  --slate-12: #131311;
+
+  /* ── Ember (warm accent — single hue) ── */
+  --ember-50:  #FDF1EC;
+  --ember-100: #FBDED2;
+  --ember-200: #F6BBA1;
+  --ember-300: #F09872;
+  --ember-400: #EA8158;
+  --ember-500: #E26D4D;  /* brand primary */
+  --ember-600: #C95A3D;
+  --ember-700: #A8472F;
+  --ember-800: #823623;
+  --ember-900: #4E1F14;
+
+  /* ── Sage (success / health events) ── */
+  --sage-50:  #F1F4ED;
+  --sage-100: #DCE5D3;
+  --sage-500: #7C8B5C;
+  --sage-700: #4F5B3A;
+
+  /* ── Amber (warning / deadline events) ── */
+  --amber-50:  #FDF5E6;
+  --amber-100: #F9E4B8;
+  --amber-500: #C8943A;
+  --amber-700: #8A6027;
+
+  /* ── Clay (danger / conflict) ── */
+  --clay-50:  #FCEFEE;
+  --clay-100: #F5D5D4;
+  --clay-500: #B85450;
+  --clay-700: #7A3533;
+
+  /* ── Steel (info / work events) ── */
+  --steel-50:  #EBF0F6;
+  --steel-100: #CCDAEA;
+  --steel-500: #5B7FA6;
+  --steel-700: #34567A;
+
+  /* ── Spacing ── */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* ── Radii ── */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 999px;
+
+  /* ── Motion ── */
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* ── Typography ── */
+  --font-sans:  'Geist', 'Geist Variable', system-ui, -apple-system, sans-serif;
+  --font-mono:  'Geist Mono', 'Geist Mono Variable', ui-monospace, 'SF Mono', monospace;
+  --font-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * 3. Semantic tokens — Light theme (default)
+ * ───────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-page:        var(--slate-0);
+  --bg-0:           var(--slate-1);
+  --bg-1:           var(--slate-2);
+  --bg-2:           var(--slate-3);
+  --bg-hover:       rgba(19, 19, 17, 0.04);
+  --bg-translucent: rgba(250, 250, 248, 0.85);
+
+  /* Foregrounds */
+  --fg-0: var(--slate-12);
+  --fg-1: var(--slate-10);
+  --fg-2: var(--slate-7);
+  --fg-3: var(--slate-5);
+
+  /* Borders */
+  --border-subtle: rgba(19, 19, 17, 0.08);
+  --border:        var(--slate-3);
+  --border-strong: var(--slate-5);
+
+  /* Accent (Ember) */
+  --accent:      var(--ember-500);
+  --accent-fg:   #FFFFFF;
+  --accent-tint: var(--ember-50);
+
+  /* Shadows — warm-tinted, never pure black */
+  --shadow-sm: 0 1px 3px rgba(19, 19, 17, 0.08), 0 1px 2px rgba(19, 19, 17, 0.04);
+  --shadow-md: 0 4px 16px rgba(19, 19, 17, 0.10), 0 2px 6px rgba(19, 19, 17, 0.06);
+  --shadow-lg: 0 12px 40px rgba(19, 19, 17, 0.14), 0 4px 12px rgba(19, 19, 17, 0.08);
+
+  /* Semantic — success / warning / danger / info */
+  --success:      var(--sage-700);
+  --success-tint: rgba(124, 139, 92, 0.12);
+  --warning:      var(--amber-700);
+  --warning-tint: rgba(200, 148, 58, 0.12);
+  --danger:       var(--clay-700);
+  --danger-tint:  rgba(184, 84, 80, 0.12);
+  --info:         var(--steel-700);
+  --info-tint:    rgba(91, 127, 166, 0.12);
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * 4. Semantic tokens — Dark theme
+ * ───────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-page:        var(--slate-12);
+  --bg-0:           var(--slate-11);
+  --bg-1:           var(--slate-10);
+  --bg-2:           var(--slate-9);
+  --bg-hover:       rgba(250, 250, 248, 0.06);
+  --bg-translucent: rgba(19, 19, 17, 0.85);
+
+  /* Foregrounds */
+  --fg-0: var(--slate-0);
+  --fg-1: var(--slate-2);
+  --fg-2: var(--slate-5);
+  --fg-3: var(--slate-7);
+
+  /* Borders */
+  --border-subtle: rgba(250, 250, 248, 0.08);
+  --border:        var(--slate-9);
+  --border-strong: var(--slate-7);
+
+  /* Accent — ember-400 for dark legibility */
+  --accent:      var(--ember-400);
+  --accent-fg:   #FFFFFF;
+  --accent-tint: rgba(226, 109, 77, 0.15);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.20), 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.16);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.36), 0 4px 12px rgba(0, 0, 0, 0.20);
+
+  /* Semantic */
+  --success:      var(--sage-500);
+  --success-tint: rgba(124, 139, 92, 0.18);
+  --warning:      var(--amber-500);
+  --warning-tint: rgba(200, 148, 58, 0.18);
+  --danger:       var(--clay-500);
+  --danger-tint:  rgba(184, 84, 80, 0.18);
+  --info:         var(--steel-500);
+  --info-tint:    rgba(91, 127, 166, 0.18);
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * 5. Base resets + type utility classes
+ * ───────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-sans);
+  color: var(--fg-1);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings */
+.t-h1 { font-family: var(--font-sans); font-size: 36px; font-weight: 600; line-height: 1.15; color: var(--fg-0); letter-spacing: -0.02em; }
+.t-h2 { font-family: var(--font-sans); font-size: 30px; font-weight: 600; line-height: 1.2;  color: var(--fg-0); letter-spacing: -0.015em; }
+.t-h3 { font-family: var(--font-sans); font-size: 24px; font-weight: 600; line-height: 1.25; color: var(--fg-0); letter-spacing: -0.01em; }
+.t-h4 { font-family: var(--font-sans); font-size: 20px; font-weight: 600; line-height: 1.3;  color: var(--fg-0); }
+
+/* Display (Instrument Serif) — day numbers, month headers */
+.t-display    { font-family: var(--font-serif); font-size: 32px; line-height: 1; letter-spacing: -0.02em; color: var(--fg-0); }
+.t-display-sm { font-family: var(--font-serif); font-size: 20px; line-height: 1; letter-spacing: -0.01em; color: var(--fg-0); }
+
+/* Body */
+.t-body    { font-family: var(--font-sans); font-size: 16px; font-weight: 400; line-height: 24px; color: var(--fg-1); }
+.t-body-sm { font-family: var(--font-sans); font-size: 14px; font-weight: 400; line-height: 21px; color: var(--fg-1); }
+
+/* UI — buttons, menu items */
+.t-ui { font-family: var(--font-sans); font-size: 15px; font-weight: 500; color: var(--fg-0); }
+
+/* Caption & micro */
+.t-caption { font-family: var(--font-sans); font-size: 12px; font-weight: 400; line-height: 1.4; color: var(--fg-2); }
+.t-micro   { font-family: var(--font-sans); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-2); }
+
+/* Monospace */
+.t-mono { font-family: var(--font-mono); font-size: 13px; color: var(--fg-1); }
+.t-mono-sm { font-family: var(--font-mono); font-size: 11px; color: var(--fg-2); }
+
+/* Caps label (micro labels in nav, section headers) */
+.tracking-caps { letter-spacing: 0.06em; text-transform: uppercase; }

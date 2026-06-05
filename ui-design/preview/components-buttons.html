@@ -1,0 +1,75 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>body { min-height: 220px; }</style>
+</head>
+<body>
+
+<style>
+  .btn-primary { 
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-family:var(--font-sans); font-size:15px; font-weight:500;
+  padding:0 16px; height:36px; border-radius:6px;
+  cursor:pointer; border:1px solid transparent;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+ background:var(--accent); color:var(--accent-fg) }
+  .btn-primary:hover { background:var(--accent-hover) }
+  .btn-secondary { 
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-family:var(--font-sans); font-size:15px; font-weight:500;
+  padding:0 16px; height:36px; border-radius:6px;
+  cursor:pointer; border:1px solid transparent;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+ background:var(--bg-0); color:var(--fg-0); border-color:var(--border) }
+  .btn-secondary:hover { background:var(--bg-1) }
+  .btn-ghost { 
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-family:var(--font-sans); font-size:15px; font-weight:500;
+  padding:0 16px; height:36px; border-radius:6px;
+  cursor:pointer; border:1px solid transparent;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+ background:transparent; color:var(--fg-0) }
+  .btn-ghost:hover { background:var(--bg-hover) }
+  .btn-danger { 
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-family:var(--font-sans); font-size:15px; font-weight:500;
+  padding:0 16px; height:36px; border-radius:6px;
+  cursor:pointer; border:1px solid transparent;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+ background:var(--clay-500); color:#fff }
+  .btn-icon { 
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-family:var(--font-sans); font-size:15px; font-weight:500;
+  padding:0 16px; height:36px; border-radius:6px;
+  cursor:pointer; border:1px solid transparent;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+ width:36px; padding:0 }
+  .btn-disabled { 
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-family:var(--font-sans); font-size:15px; font-weight:500;
+  padding:0 16px; height:36px; border-radius:6px;
+  cursor:pointer; border:1px solid transparent;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+ background:var(--bg-1); color:var(--fg-3); cursor:not-allowed }
+  svg { width:16px; height:16px }
+</style>
+<div class="col" style="gap:14px">
+  <div class="row" style="gap:10px">
+    <button class="btn-primary">New event</button>
+    <button class="btn-secondary">Cancel</button>
+    <button class="btn-ghost">Skip</button>
+    <button class="btn-danger">Delete</button>
+  </div>
+  <div class="row" style="gap:10px">
+    <button class="btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add event</button>
+    <button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+    <button class="btn-icon btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+    <button class="btn-disabled">Disabled</button>
+  </div>
+</div>
+<div class="label" style="margin-top:14px">Primary · Secondary · Ghost · Danger · Icon · Disabled. 36px tall, sentence case, 1–3 words.</div>
+
+</body>
+</html>

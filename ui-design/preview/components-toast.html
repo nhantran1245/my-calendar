@@ -1,0 +1,42 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="_card.css">
+<style>body { min-height: 220px; }</style>
+</head>
+<body>
+
+<style>
+  .toast {
+    display:flex; gap:12px; align-items:flex-start;
+    padding:12px 14px; background:var(--bg-0);
+    border:1px solid var(--border); border-radius:10px;
+    box-shadow:var(--shadow-md);
+    max-width:380px;
+  }
+  .toast .icon { width:28px; height:28px; border-radius:999px; background:var(--accent-tint); color:var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0 }
+  .toast .icon svg { width:16px; height:16px }
+  .toast .title { font-family:var(--font-sans); font-weight:500; font-size:14px; color:var(--fg-0) }
+  .toast .body { font-family:var(--font-sans); font-size:13px; color:var(--fg-2); margin-top:2px }
+</style>
+<div class="col" style="gap:12px">
+  <div class="toast">
+    <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
+    <div style="flex:1">
+      <div class="title">Standup in 10 minutes</div>
+      <div class="body">Conf room B · with Engineering</div>
+    </div>
+  </div>
+  <div class="toast" style="background:var(--bg-1); border-color:transparent">
+    <div class="icon" style="background:var(--success-tint); color:var(--sage-700)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div style="flex:1">
+      <div class="title">Saved.</div>
+      <div class="body">Moved to next Thursday at 9:30am.</div>
+    </div>
+  </div>
+</div>
+<div class="label" style="margin-top:14px">Notification &amp; toast — circular icon · sentence-case title · gray subtitle. No emoji, no exclamation marks.</div>
+
+</body>
+</html>

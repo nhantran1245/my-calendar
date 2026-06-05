@@ -1,0 +1,211 @@
+<!doctype html>
+<html data-theme="light" lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cadence — Mobile UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    background: var(--bg-page); color: var(--fg-0);
+    font-family: var(--font-sans);
+    padding: 48px 32px 80px;
+  }
+  .kit-header {
+    max-width: 1600px; margin: 0 auto 40px;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 32px;
+  }
+  .kit-title {
+    font-family: var(--font-serif); font-size: 56px;
+    line-height: 1; letter-spacing: -0.02em; color: var(--fg-0);
+  }
+  .kit-sub {
+    font-size: 14px; color: var(--fg-2); margin-top: 8px; max-width: 480px;
+  }
+  .theme-toggle {
+    display: inline-flex; align-items: center; padding: 4px;
+    background: var(--bg-1); border-radius: 999px; gap: 2px;
+  }
+  .theme-toggle button {
+    border: none; background: transparent; padding: 6px 14px;
+    border-radius: 999px; font-family: var(--font-sans); font-size: 13px;
+    font-weight: 500; color: var(--fg-2); cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .theme-toggle button.active {
+    background: var(--bg-0); color: var(--fg-0); box-shadow: var(--shadow-sm);
+  }
+  .lineup {
+    display: flex; gap: 32px; justify-content: center; align-items: flex-start;
+    flex-wrap: wrap; max-width: 1700px; margin: 0 auto;
+  }
+  .device-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  .screen-label {
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--fg-2); font-weight: 500;
+  }
+  .device-host {
+    position: relative;
+    /* iOS frame is 402x874 */
+  }
+</style>
+</head>
+<body>
+
+<div class="kit-header">
+  <div>
+    <div class="kit-title">cadence — mobile</div>
+    <div class="kit-sub">Four core screens at iPhone scale: month, day, agenda, and the new-event sheet. Tap the FAB on the day screen to open the sheet; switch themes top right.</div>
+  </div>
+  <div class="theme-toggle" id="theme-toggle">
+    <button data-theme="light" class="active">Light</button>
+    <button data-theme="dark">Dark</button>
+  </div>
+</div>
+
+<div class="lineup" id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="Components.jsx"></script>
+<script type="text/babel" src="Screens.jsx"></script>
+
+<script type="text/babel">
+function CadenceApp({ initialTab = 'day', sheetOpen = false }) {
+  const [tab, setTab] = React.useState(initialTab);
+  const [sheet, setSheet] = React.useState(sheetOpen);
+  const compose = () => setSheet(true);
+
+  const screen =
+    tab === 'month'  ? <MonthScreen  onPickDay={() => setTab('day')} onCompose={compose} /> :
+    tab === 'day'    ? <DayScreen    onCompose={compose} /> :
+    tab === 'agenda' ? <AgendaScreen onCompose={compose} /> :
+                       <SettingsScreen />;
+
+  return (
+    <div style={{ position: 'relative', height: '100%' }}>
+      {screen}
+      <CadenceTabBar tab={tab} onChange={setTab} />
+      {sheet && <NewEventSheet onClose={() => setSheet(false)} onSave={() => setSheet(false)} />}
+    </div>
+  );
+}
+
+function SettingsScreen() {
+  return (
+    <div style={{ background: 'var(--bg-page)', minHeight: '100%', paddingBottom: 100 }}>
+      <CadenceTopBar title="Settings" />
+      <div style={{ padding: '4px 16px 24px' }}>
+        <Group title="Calendars">
+          <Row label="Personal" color="var(--ember-500)" checked />
+          <Row label="Work" color="var(--steel-500)" checked />
+          <Row label="Health" color="var(--sage-500)" checked />
+          <Row label="Deadlines" color="var(--amber-500)" checked={false} />
+          <Row label="Holidays" color="var(--slate-7)" checked={false} last />
+        </Group>
+        <Group title="Notifications">
+          <Toggle label="Event reminders" on />
+          <Toggle label="Day summary" on />
+          <Toggle label="Quiet hours · 10pm – 7am" on last />
+        </Group>
+        <Group title="Display">
+          <Toggle label="24-hour time" on={false} />
+          <Toggle label="Show week numbers" on={false} last />
+        </Group>
+      </div>
+    </div>
+  );
+}
+
+function Group({ title, children }) {
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fg-2)', fontWeight: 500, padding: '0 6px 6px' }}>{title}</div>
+      <div style={{ background: 'var(--bg-0)', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>{children}</div>
+    </div>
+  );
+}
+function Row({ label, color, checked, last }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px', borderBottom: last ? 'none' : '1px solid var(--border-subtle)' }}>
+      <span style={{ width: 10, height: 10, borderRadius: 999, background: color, flexShrink: 0 }} />
+      <div style={{ flex: 1, fontSize: 15, color: 'var(--fg-0)' }}>{label}</div>
+      <div style={{
+        width: 18, height: 18, borderRadius: 4,
+        border: '1.5px solid ' + (checked ? 'var(--accent)' : 'var(--border-strong)'),
+        background: checked ? 'var(--accent)' : 'transparent',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#fff',
+      }}>
+        {checked && <Icon name="check" size={12} strokeWidth={3} />}
+      </div>
+    </div>
+  );
+}
+function Toggle({ label, on, last }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', padding: '12px 14px', borderBottom: last ? 'none' : '1px solid var(--border-subtle)' }}>
+      <div style={{ flex: 1, fontSize: 15, color: 'var(--fg-0)' }}>{label}</div>
+      <div style={{
+        width: 44, height: 26, borderRadius: 999,
+        background: on ? 'var(--accent)' : 'var(--bg-2)',
+        position: 'relative', transition: 'background var(--dur-fast) var(--ease-out)',
+      }}>
+        <div style={{
+          position: 'absolute', left: on ? 20 : 2, top: 2,
+          width: 22, height: 22, borderRadius: 999,
+          background: '#fff', boxShadow: 'var(--shadow-sm)',
+          transition: 'left var(--dur-fast) var(--ease-out)',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+function PhoneLineup() {
+  return (
+    <>
+      <div className="device-wrap">
+        <div className="screen-label">Month</div>
+        <IOSDevice width={360} height={780}>
+          <CadenceApp initialTab="month" />
+        </IOSDevice>
+      </div>
+      <div className="device-wrap">
+        <div className="screen-label">Day</div>
+        <IOSDevice width={360} height={780}>
+          <CadenceApp initialTab="day" />
+        </IOSDevice>
+      </div>
+      <div className="device-wrap">
+        <div className="screen-label">Agenda</div>
+        <IOSDevice width={360} height={780}>
+          <CadenceApp initialTab="agenda" />
+        </IOSDevice>
+      </div>
+      <div className="device-wrap">
+        <div className="screen-label">New event</div>
+        <IOSDevice width={360} height={780}>
+          <CadenceApp initialTab="day" sheetOpen />
+        </IOSDevice>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<PhoneLineup />);
+
+// Theme toggle wiring
+document.getElementById('theme-toggle').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-theme]'); if (!btn) return;
+  document.documentElement.dataset.theme = btn.dataset.theme;
+  document.querySelectorAll('#theme-toggle button').forEach(b => b.classList.toggle('active', b === btn));
+});
+</script>
+</body>
+</html>

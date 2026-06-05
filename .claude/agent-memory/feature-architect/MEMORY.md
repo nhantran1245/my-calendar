@@ -1,0 +1,2 @@
+- [Project Stack & Architecture](project_stack.md) — NestJS backend, Expo React Native mobile, Electron + React desktop, PostgreSQL with Flyway migrations
+- [Code Conventions](code_conventions.md) — UUID ids, camelCase props with snake_case columns, no magic strings (use constants/enums), DTOs with class-validator

@@ -1,0 +1,232 @@
+/*
+ * Cadence Desktop — Global styles
+ * Sets Cadence tokens on :root and applies base resets.
+ * Mirrors colors_and_type.css but scoped for the Vite/React renderer.
+ *
+ * Theme is driven by the OS preference via prefers-color-scheme.
+ * To hard-override: document.documentElement.dataset.theme = 'dark' | 'light'
+ */
+
+/* ─────────────────────────────────────────────────────────────
+ * Fonts — Google Fonts CDN (swap for local woff2 files to go offline)
+ * ───────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400&family=Instrument+Serif:ital@0;1&display=swap');
+
+/* ─────────────────────────────────────────────────────────────
+ * Palette primitives (referenced by semantic tokens below)
+ * ───────────────────────────────────────────────────────────── */
+:root {
+  /* Slate */
+  --slate-0:  #FAFAF8;
+  --slate-1:  #F4F4F1;
+  --slate-2:  #EBEBE6;
+  --slate-3:  #DDDDD6;
+  --slate-4:  #C7C7BE;
+  --slate-5:  #A8A89E;
+  --slate-6:  #898980;
+  --slate-7:  #6B6B63;
+  --slate-8:  #525249;
+  --slate-9:  #3E3E36;
+  --slate-10: #2C2C26;
+  --slate-11: #1E1E1A;
+  --slate-12: #131311;
+
+  /* Ember */
+  --ember-50:  #FDF1EC;
+  --ember-100: #FBDED2;
+  --ember-400: #EA8158;
+  --ember-500: #E26D4D;
+  --ember-800: #823623;
+
+  /* Category palettes */
+  --sage-500:  #7C8B5C;
+  --sage-700:  #4F5B3A;
+  --amber-500: #C8943A;
+  --amber-700: #8A6027;
+  --clay-500:  #B85450;
+  --clay-700:  #7A3533;
+  --steel-500: #5B7FA6;
+  --steel-700: #34567A;
+
+  /* Spacing */
+  --space-0: 0px;   --space-1: 4px;   --space-2: 8px;
+  --space-3: 12px;  --space-4: 16px;  --space-5: 24px;
+  --space-6: 32px;  --space-7: 48px;  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Radii */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 999px;
+
+  /* Motion */
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Typography */
+  --font-sans:  'Geist', 'Geist Variable', system-ui, -apple-system, sans-serif;
+  --font-mono:  'Geist Mono', 'Geist Mono Variable', ui-monospace, 'SF Mono', monospace;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Semantic tokens — Light
+ * ───────────────────────────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  --bg-page:        var(--slate-0);
+  --bg-0:           var(--slate-1);
+  --bg-1:           var(--slate-2);
+  --bg-2:           var(--slate-3);
+  --bg-hover:       rgba(19, 19, 17, 0.04);
+  --bg-translucent: rgba(250, 250, 248, 0.85);
+
+  --fg-0: var(--slate-12);
+  --fg-1: var(--slate-10);
+  --fg-2: var(--slate-7);
+  --fg-3: var(--slate-5);
+
+  --border-subtle: rgba(19, 19, 17, 0.08);
+  --border:        var(--slate-3);
+  --border-strong: var(--slate-5);
+
+  --accent:      var(--ember-500);
+  --accent-fg:   #FFFFFF;
+  --accent-tint: var(--ember-50);
+
+  --shadow-sm: 0 1px 3px rgba(19, 19, 17, 0.08), 0 1px 2px rgba(19, 19, 17, 0.04);
+  --shadow-md: 0 4px 16px rgba(19, 19, 17, 0.10), 0 2px 6px rgba(19, 19, 17, 0.06);
+  --shadow-lg: 0 12px 40px rgba(19, 19, 17, 0.14), 0 4px 12px rgba(19, 19, 17, 0.08);
+
+  --success:      var(--sage-700);
+  --success-tint: rgba(124, 139, 92, 0.12);
+  --warning:      var(--amber-700);
+  --warning-tint: rgba(200, 148, 58, 0.12);
+  --danger:       var(--clay-700);
+  --danger-tint:  rgba(184, 84, 80, 0.12);
+  --info:         var(--steel-700);
+  --info-tint:    rgba(91, 127, 166, 0.12);
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Semantic tokens — Dark
+ * ───────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-page:        var(--slate-12);
+  --bg-0:           var(--slate-11);
+  --bg-1:           var(--slate-10);
+  --bg-2:           var(--slate-9);
+  --bg-hover:       rgba(250, 250, 248, 0.06);
+  --bg-translucent: rgba(19, 19, 17, 0.85);
+
+  --fg-0: var(--slate-0);
+  --fg-1: var(--slate-2);
+  --fg-2: var(--slate-5);
+  --fg-3: var(--slate-7);
+
+  --border-subtle: rgba(250, 250, 248, 0.08);
+  --border:        var(--slate-9);
+  --border-strong: var(--slate-7);
+
+  --accent:      var(--ember-400);
+  --accent-fg:   #FFFFFF;
+  --accent-tint: rgba(226, 109, 77, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.20), 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.16);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.36), 0 4px 12px rgba(0, 0, 0, 0.20);
+
+  --success:      var(--sage-500);
+  --success-tint: rgba(124, 139, 92, 0.18);
+  --warning:      var(--amber-500);
+  --warning-tint: rgba(200, 148, 58, 0.18);
+  --danger:       var(--clay-500);
+  --danger-tint:  rgba(184, 84, 80, 0.18);
+  --info:         var(--steel-500);
+  --info-tint:    rgba(91, 127, 166, 0.18);
+}
+
+/* OS dark mode auto-detect (overridden by explicit data-theme) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-page:        var(--slate-12);
+    --bg-0:           var(--slate-11);
+    --bg-1:           var(--slate-10);
+    --bg-2:           var(--slate-9);
+    --bg-hover:       rgba(250, 250, 248, 0.06);
+    --bg-translucent: rgba(19, 19, 17, 0.85);
+
+    --fg-0: var(--slate-0);
+    --fg-1: var(--slate-2);
+    --fg-2: var(--slate-5);
+    --fg-3: var(--slate-7);
+
+    --border-subtle: rgba(250, 250, 248, 0.08);
+    --border:        var(--slate-9);
+    --border-strong: var(--slate-7);
+
+    --accent:      var(--ember-400);
+    --accent-fg:   #FFFFFF;
+    --accent-tint: rgba(226, 109, 77, 0.15);
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.20), 0 1px 2px rgba(0, 0, 0, 0.12);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.16);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.36), 0 4px 12px rgba(0, 0, 0, 0.20);
+
+    --success:      var(--sage-500);
+    --success-tint: rgba(124, 139, 92, 0.18);
+    --warning:      var(--amber-500);
+    --warning-tint: rgba(200, 148, 58, 0.18);
+    --danger:       var(--clay-500);
+    --danger-tint:  rgba(184, 84, 80, 0.18);
+    --info:         var(--steel-500);
+    --info-tint:    rgba(91, 127, 166, 0.18);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Base resets
+ * ───────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden; /* Electron app — no scroll at root level */
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--fg-1);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none; /* desktop app feel */
+  -webkit-user-select: none;
+}
+
+/* Allow text selection in inputs and content areas */
+input, textarea, [data-selectable] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+button {
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
+/* Electron drag region for custom titlebar */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.drag-region button,
+.drag-region input {
+  -webkit-app-region: no-drag;
+}

@@ -1,0 +1,362 @@
+openapi: 3.0.0
+info:
+  title: Cadence Calendar API — User Profile Endpoints
+  version: 1.0.0
+  description: Profile management endpoints for viewing and updating user information.
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+tags:
+  - name: Users
+    description: User profile and account management
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token (15 min expiry)
+
+  schemas:
+    UserProfile:
+      type: object
+      description: User profile response (includes all profile fields)
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        username:
+          type: string
+          minLength: 1
+          maxLength: 20
+          example: "john_doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        display_name:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 100
+          example: "John Doe"
+        bio:
+          type: string
+          nullable: true
+          maxLength: 500
+          example: "Coffee enthusiast, calendar nerd."
+        avatar_url:
+          type: string
+          nullable: true
+          format: uri
+          maxLength: 2048
+          example: "https://cdn.example.com/avatars/john-doe.png"
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 63
+          example: "America/New_York"
+          description: IANA timezone identifier
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+      required:
+        - id
+        - username
+        - email
+        - timezone
+        - created_at
+
+    UpdateProfileRequest:
+      type: object
+      description: Request body for updating user profile
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          nullable: true
+          example: "John Doe"
+        bio:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: "Coffee enthusiast, calendar nerd."
+        avatar_url:
+          type: string
+          format: uri
+          maxLength: 2048
+          nullable: true
+          example: "https://cdn.example.com/avatars/john-doe.png"
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 63
+          example: "America/New_York"
+          description: IANA timezone identifier (required)
+      required:
+        - timezone
+      additionalProperties: false
+
+    ChangePasswordRequest:
+      type: object
+      description: Request body for changing password
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+          example: "OldPass123"
+          description: User's current password for verification
+        new_password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          example: "NewSecurePass456"
+          description: |
+            New password must contain at least one uppercase letter,
+            one lowercase letter, and one digit. Must be different from current password.
+      required:
+        - current_password
+        - new_password
+      additionalProperties: false
+
+    ChangePasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Password changed successfully. You have been logged out from all devices. Please log in again."
+      required:
+        - message
+
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Validation error"
+        error:
+          type: string
+          example: "Bad Request"
+      required:
+        - statusCode
+        - message
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "display_name"
+              messages:
+                type: array
+                items:
+                  type: string
+                  example: "display_name must be shorter than or equal to 100 characters"
+        error:
+          type: string
+          example: "Bad Request"
+
+paths:
+  /users/me:
+    get:
+      operationId: getMe
+      summary: Get current user's profile
+      description: |
+        Retrieve the authenticated user's complete profile information,
+        including display name, bio, avatar, timezone, and account creation date.
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+              example:
+                id: "123e4567-e89b-12d3-a456-426614174000"
+                username: "john_doe"
+                email: "john@example.com"
+                display_name: "John Doe"
+                bio: "Coffee enthusiast, calendar nerd."
+                avatar_url: "https://cdn.example.com/avatars/john-doe.png"
+                timezone: "America/New_York"
+                created_at: "2026-01-15T10:30:00Z"
+
+        '401':
+          description: Missing or invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                message: "Unauthorized"
+                error: "Unauthorized"
+
+    patch:
+      operationId: updateProfile
+      summary: Update user profile
+      description: |
+        Update the authenticated user's profile fields (display name, bio, avatar URL, timezone).
+        Timezone is the only required field; other fields are optional and will only update
+        if provided. Omitted fields are not modified.
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+            example:
+              display_name: "John Doe"
+              bio: "Coffee enthusiast, calendar nerd."
+              avatar_url: "https://cdn.example.com/avatars/john-doe.png"
+              timezone: "America/New_York"
+
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+              example:
+                id: "123e4567-e89b-12d3-a456-426614174000"
+                username: "john_doe"
+                email: "john@example.com"
+                display_name: "John Doe"
+                bio: "Coffee enthusiast, calendar nerd."
+                avatar_url: "https://cdn.example.com/avatars/john-doe.png"
+                timezone: "America/New_York"
+                created_at: "2026-01-15T10:30:00Z"
+
+        '400':
+          description: Validation error (malformed request or invalid timezone)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                statusCode: 400
+                message:
+                  - field: "timezone"
+                    messages:
+                      - "timezone must be a valid IANA timezone identifier"
+                error: "Bad Request"
+
+        '401':
+          description: Missing or invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                message: "Unauthorized"
+                error: "Unauthorized"
+
+        '404':
+          description: User not found (should not occur if token is valid)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 404
+                message: "User not found"
+                error: "Not Found"
+
+  /users/me/password:
+    patch:
+      operationId: changePassword
+      summary: Change user password
+      description: |
+        Change the authenticated user's password. The current password must be verified.
+        On success, all refresh tokens are revoked, forcing re-login on all devices.
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            example:
+              current_password: "OldPass123"
+              new_password: "NewSecurePass456"
+
+      responses:
+        '200':
+          description: Password changed successfully; user logged out from all devices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangePasswordResponse'
+              example:
+                message: "Password changed successfully. You have been logged out from all devices. Please log in again."
+
+        '400':
+          description: Validation error (password does not meet strength requirements)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                statusCode: 400
+                message:
+                  - field: "new_password"
+                    messages:
+                      - "new_password must contain at least one uppercase letter, one lowercase letter, and one digit"
+                error: "Bad Request"
+
+        '401':
+          description: |
+            Unauthorized — either missing/invalid access token,
+            or current password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                message: "Invalid current password"
+                error: "Unauthorized"
+
+        '404':
+          description: User not found (should not occur if token is valid)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 404
+                message: "User not found"
+                error: "Not Found"
+
+security:
+  - bearerAuth: []

@@ -1,0 +1,965 @@
+openapi: 3.0.0
+info:
+  title: Recurring Events API
+  version: 1.0.0
+  description: API endpoints for managing recurring events in the personal calendar
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://api.my-calendar.com/api
+    description: Production server
+
+components:
+  schemas:
+    # ===== Enums =====
+    RecurrenceFrequency:
+      type: string
+      enum:
+        - daily
+        - weekly
+        - monthly
+        - yearly
+      description: Frequency of recurrence
+
+    RecurrenceEndType:
+      type: string
+      enum:
+        - never
+        - after_occurrences
+        - on_date
+      description: Type of recurrence termination
+
+    DayOfWeek:
+      type: string
+      enum:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+        - sat
+        - sun
+      description: Day of the week
+
+    # ===== Recurrence Pattern Objects =====
+    WeeklyRecurrencePattern:
+      type: object
+      required:
+        - days
+      properties:
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayOfWeek'
+          minItems: 1
+          example: ["mon", "wed", "fri"]
+          description: Days of the week to repeat on
+
+    MonthlyDatePattern:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+          description: Repeat on a specific date each month
+        value:
+          type: integer
+          minimum: 1
+          maximum: 31
+          example: 15
+          description: Date of month (1-31)
+
+    MonthlyRelativePattern:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          enum:
+            - relative
+          description: Repeat on a relative day each month
+        value:
+          type: string
+          enum:
+            - 1st_monday
+            - 1st_tuesday
+            - 1st_wednesday
+            - 1st_thursday
+            - 1st_friday
+            - 1st_saturday
+            - 1st_sunday
+            - 2nd_monday
+            - 2nd_tuesday
+            - 2nd_wednesday
+            - 2nd_thursday
+            - 2nd_friday
+            - 2nd_saturday
+            - 2nd_sunday
+            - 3rd_monday
+            - 3rd_tuesday
+            - 3rd_wednesday
+            - 3rd_thursday
+            - 3rd_friday
+            - 3rd_saturday
+            - 3rd_sunday
+            - 4th_monday
+            - 4th_tuesday
+            - 4th_wednesday
+            - 4th_thursday
+            - 4th_friday
+            - 4th_saturday
+            - 4th_sunday
+            - last_monday
+            - last_tuesday
+            - last_wednesday
+            - last_thursday
+            - last_friday
+            - last_saturday
+            - last_sunday
+          example: 2nd_tuesday
+          description: Relative day pattern (e.g., "2nd Tuesday")
+
+    YearlyPattern:
+      type: object
+      required:
+        - month
+      properties:
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+          example: 8
+          description: Month of the year (1-12)
+        day:
+          type: integer
+          minimum: 1
+          maximum: 31
+          example: 15
+          description: Specific date (when not using relative)
+        relative:
+          type: string
+          description: Relative pattern (e.g., "2nd_tuesday") if not using specific date
+
+    RecurrenceRule:
+      type: object
+      required:
+        - frequency
+        - endType
+      properties:
+        frequency:
+          $ref: '#/components/schemas/RecurrenceFrequency'
+        pattern:
+          oneOf:
+            - $ref: '#/components/schemas/WeeklyRecurrencePattern'
+            - $ref: '#/components/schemas/MonthlyDatePattern'
+            - $ref: '#/components/schemas/MonthlyRelativePattern'
+            - $ref: '#/components/schemas/YearlyPattern'
+          description: Pattern details (required for weekly/monthly/yearly, null for daily)
+        endType:
+          $ref: '#/components/schemas/RecurrenceEndType'
+        endValue:
+          oneOf:
+            - type: 'null'
+              description: For endType=never
+            - type: integer
+              minimum: 1
+              description: Number of occurrences (for endType=after_occurrences)
+            - type: string
+              format: date-time
+              description: End date (for endType=on_date)
+          description: End condition value based on endType
+
+    # ===== Event Schemas =====
+    EventBase:
+      type: object
+      required:
+        - title
+        - startAt
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          example: Football Match
+          description: Event title
+        description:
+          type: string
+          nullable: true
+          example: Weekly football game with friends
+          description: Event description
+        startAt:
+          type: string
+          format: date-time
+          example: 2026-06-08T19:00:00Z
+          description: Event start time (UTC)
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: 2026-06-08T20:30:00Z
+          description: Event end time (UTC)
+        allDay:
+          type: boolean
+          default: false
+          description: Whether event spans full day(s)
+        tag:
+          type: string
+          enum:
+            - personal
+            - work
+            - health
+            - deadline
+          default: personal
+          description: Event category/tag
+        reminderMinutesBefore:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 1440
+          example: 30
+          description: Minutes before event to trigger reminder (0-1440)
+
+    CreateSingleEventRequest:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            isRecurring:
+              type: boolean
+              enum:
+                - false
+              description: Set to false for single events
+
+    CreateRecurringEventRequest:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required:
+            - isRecurring
+            - recurrenceRule
+          properties:
+            isRecurring:
+              type: boolean
+              enum:
+                - true
+              description: Set to true for recurring events
+            recurrenceRule:
+              $ref: '#/components/schemas/RecurrenceRule'
+            estimatedInstanceCount:
+              type: integer
+              readOnly: true
+              description: (Response only) Number of instances that will be created
+
+    EventResponse:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: 550e8400-e29b-41d4-a716-446655440000
+              description: Unique event ID
+            userId:
+              type: string
+              format: uuid
+              nullable: true
+              description: User who owns the event
+            isCompleted:
+              type: boolean
+              default: false
+              description: Whether event is marked complete
+            # Recurrence fields
+            recurringEventId:
+              type: string
+              format: uuid
+              nullable: true
+              description: For instances: ID of the series template; for templates: null
+            recurrenceFrequency:
+              $ref: '#/components/schemas/RecurrenceFrequency'
+              nullable: true
+              description: Frequency (for templates only)
+            recurrencePattern:
+              type: object
+              nullable: true
+              description: Pattern details (for templates only)
+            recurrenceEndType:
+              $ref: '#/components/schemas/RecurrenceEndType'
+              nullable: true
+              description: End type (for templates only)
+            recurrenceEndValue:
+              nullable: true
+              oneOf:
+                - type: 'null'
+                - type: integer
+                - type: string
+              description: End value (for templates only)
+            recurrenceGeneratedUntil:
+              type: string
+              format: date-time
+              nullable: true
+              description: How far instances have been generated
+            isRecurrenceTemplate:
+              type: boolean
+              description: Whether this is a series template
+            isRecurrenceOverride:
+              type: boolean
+              description: Whether this instance has been manually modified
+            overriddenAt:
+              type: string
+              format: date-time
+              nullable: true
+              description: When this instance was overridden
+            createdAt:
+              type: string
+              format: date-time
+              description: Record creation time
+            updatedAt:
+              type: string
+              format: date-time
+              description: Record update time
+
+    UpdateEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+        allDay:
+          type: boolean
+        tag:
+          type: string
+          enum:
+            - personal
+            - work
+            - health
+            - deadline
+        reminderMinutesBefore:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 1440
+        isCompleted:
+          type: boolean
+
+    UpdateRecurringEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+        allDay:
+          type: boolean
+        tag:
+          type: string
+          enum:
+            - personal
+            - work
+            - health
+            - deadline
+        reminderMinutesBefore:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 1440
+        recurrenceRule:
+          $ref: '#/components/schemas/RecurrenceRule'
+        scope:
+          type: string
+          enum:
+            - this_only
+            - this_and_following
+            - all
+          default: this_only
+          description: 'Which instances to update: this_only (single instance), this_and_following (future instances), all (entire series)'
+
+    RecurringEventSeriesResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Series template ID
+        title:
+          type: string
+          description: Event title
+        description:
+          type: string
+          nullable: true
+        startAt:
+          type: string
+          format: date-time
+          description: First occurrence start time
+        endAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: First occurrence end time
+        allDay:
+          type: boolean
+        tag:
+          type: string
+          enum:
+            - personal
+            - work
+            - health
+            - deadline
+        reminderMinutesBefore:
+          type: integer
+          nullable: true
+        recurrenceFrequency:
+          $ref: '#/components/schemas/RecurrenceFrequency'
+        recurrencePattern:
+          type: object
+          description: Pattern details
+        recurrenceEndType:
+          $ref: '#/components/schemas/RecurrenceEndType'
+        recurrenceEndValue:
+          nullable: true
+          oneOf:
+            - type: 'null'
+            - type: integer
+            - type: string
+        nextOccurrenceAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Next scheduled occurrence time
+        totalInstanceCount:
+          type: integer
+          description: Total instances in the series
+        remainingInstanceCount:
+          type: integer
+          description: Instances from today onward
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error code/type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          nullable: true
+          description: Additional error details (e.g., validation errors)
+
+    ValidationError:
+      type: object
+      required:
+        - error
+        - details
+      properties:
+        error:
+          type: string
+          enum:
+            - validation_error
+        message:
+          type: string
+          example: "Request validation failed"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: recurrenceRule.pattern.days
+              message:
+                type: string
+                example: "Must include at least one day"
+
+paths:
+  # ===== RECURRING EVENTS ENDPOINTS =====
+
+  /events/recurring:
+    post:
+      summary: Create a recurring event
+      operationId: createRecurringEvent
+      tags:
+        - Recurring Events
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecurringEventRequest'
+            examples:
+              weekly:
+                summary: Weekly football on Mon/Wed/Fri
+                value:
+                  title: Football Match
+                  description: Weekly football game with friends
+                  startAt: 2026-06-08T19:00:00Z
+                  endAt: 2026-06-08T20:30:00Z
+                  tag: personal
+                  reminderMinutesBefore: 30
+                  isRecurring: true
+                  recurrenceRule:
+                    frequency: weekly
+                    pattern:
+                      days:
+                        - mon
+                        - wed
+                        - fri
+                    endType: never
+              monthly:
+                summary: Monthly on the 15th
+                value:
+                  title: Rent Payment
+                  startAt: 2026-06-15T09:00:00Z
+                  tag: deadline
+                  isRecurring: true
+                  recurrenceRule:
+                    frequency: monthly
+                    pattern:
+                      type: date
+                      value: 15
+                    endType: never
+              yearly:
+                summary: Annual birthday reminder
+                value:
+                  title: Friend's Birthday
+                  startAt: 2026-08-15T00:00:00Z
+                  allDay: true
+                  tag: personal
+                  isRecurring: true
+                  recurrenceRule:
+                    frequency: yearly
+                    pattern:
+                      month: 8
+                      day: 15
+                    endType: never
+      responses:
+        201:
+          description: Recurring event created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: '#/components/schemas/EventResponse'
+                  estimatedInstanceCount:
+                    type: integer
+                    description: Number of instances created
+                  instancesCreatedUntil:
+                    type: string
+                    format: date-time
+                    description: Instances generated up to this date
+        400:
+          description: Validation error (invalid pattern, too many instances, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        401:
+          description: Unauthorized (missing or invalid token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: List all recurring event series (templates)
+      operationId: listRecurringSeries
+      tags:
+        - Recurring Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Max results
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Pagination offset
+        - name: frequency
+          in: query
+          schema:
+            $ref: '#/components/schemas/RecurrenceFrequency'
+          description: Filter by frequency (optional)
+      responses:
+        200:
+          description: List of recurring event series
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RecurringEventSeriesResponse'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /events/recurring/{id}:
+    get:
+      summary: Get a specific recurring event series by ID
+      operationId: getRecurringSeries
+      tags:
+        - Recurring Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Series template ID
+      responses:
+        200:
+          description: Recurring event series details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringEventSeriesResponse'
+        404:
+          description: Series not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      summary: Update a recurring event series
+      operationId: updateRecurringSeries
+      tags:
+        - Recurring Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Series template ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRecurringEventRequest'
+      responses:
+        200:
+          description: Series updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: '#/components/schemas/EventResponse'
+                  updatedInstanceCount:
+                    type: integer
+                    description: Number of instances affected by the update
+        400:
+          description: Validation error or invalid update scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        404:
+          description: Series not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete a recurring event series (all instances)
+      operationId: deleteRecurringSeries
+      tags:
+        - Recurring Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Series template ID
+      responses:
+        204:
+          description: Series and all instances deleted successfully
+        404:
+          description: Series not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /events/recurring/{id}/instances:
+    get:
+      summary: Get all instances of a recurring event series
+      operationId: getRecurringInstances
+      tags:
+        - Recurring Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Series template ID
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Max results
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Pagination offset
+        - name: fromDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Get instances from this date onward (optional)
+        - name: toDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Get instances until this date (optional)
+      responses:
+        200:
+          description: List of instances for the series
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventResponse'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        404:
+          description: Series not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ===== INSTANCE MANAGEMENT ENDPOINTS =====
+
+  /events/{id}:
+    patch:
+      summary: Update a single event (single or instance with scope awareness)
+      operationId: updateEvent
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum:
+              - this_only
+              - this_and_following
+              - all
+            default: this_only
+          description: For recurring instances, which scope to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        200:
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: '#/components/schemas/EventResponse'
+                  affectedInstanceCount:
+                    type: integer
+                    nullable: true
+                    description: For recurring instances, number affected by scope
+        400:
+          description: Validation error (e.g., cannot edit past event)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        404:
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete a single event (with scope awareness for recurring instances)
+      operationId: deleteEvent
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum:
+              - this_only
+              - this_and_following
+              - all
+            default: this_only
+          description: For recurring instances, which scope to delete
+      responses:
+        204:
+          description: Event deleted successfully
+        400:
+          description: Validation error (e.g., cannot delete past event)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        404:
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+securitySchemes:
+  bearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
+    description: Bearer token for API authentication
+
+tags:
+  - name: Recurring Events
+    description: Endpoints for managing recurring event series and their instances
+  - name: Events
+    description: Core event management (extended to support recurring instances)

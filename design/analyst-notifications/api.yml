@@ -1,0 +1,663 @@
+openapi: 3.0.3
+info:
+  title: Analyst Notifications API
+  version: 1.0.0
+  description: |
+    Notification management and analytics endpoints for the personal calendar application.
+    All endpoints require JWT authentication. Notifications are user-scoped.
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.example.com/api
+    description: Production server
+
+paths:
+  /notifications:
+    get:
+      summary: List notifications for current user
+      description: |
+        Retrieve paginated list of notifications for the authenticated user.
+        By default, returns non-dismissed notifications in reverse chronological order (newest first).
+        Supports filtering by status and read state.
+      operationId: listNotifications
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skip
+          in: query
+          description: Number of notifications to skip (pagination offset)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: take
+          in: query
+          description: Number of notifications to return (pagination limit, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: includeDismissed
+          in: query
+          description: Include dismissed notifications in results
+          schema:
+            type: boolean
+            default: false
+        - name: status
+          in: query
+          description: Filter by notification delivery status (PENDING, SENT, FAILED)
+          schema:
+            type: string
+            enum: [PENDING, SENT, FAILED]
+        - name: isRead
+          in: query
+          description: Filter by read status (true=read only, false=unread only, omitted=all)
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successfully retrieved notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationResponse'
+                  total:
+                    type: integer
+                    description: Total count of notifications (respecting filters)
+                  skip:
+                    type: integer
+                  take:
+                    type: integer
+                example:
+                  data:
+                    - id: 550e8400-e29b-41d4-a716-446655440000
+                      eventId: 550e8400-e29b-41d4-a716-446655440001
+                      eventTitle: Team Meeting
+                      eventStartAt: '2026-06-03T14:00:00Z'
+                      status: SENT
+                      sentAt: '2026-06-03T13:45:00Z'
+                      isRead: false
+                      readAt: null
+                      isDismissed: false
+                      dismissedAt: null
+                      createdAt: '2026-06-03T13:45:00Z'
+                      updatedAt: '2026-06-03T13:45:00Z'
+                  total: 42
+                  skip: 0
+                  take: 50
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /notifications/{id}/read:
+    patch:
+      summary: Mark notification as read
+      description: |
+        Mark a single notification as read. Updates is_read=true and sets read_at timestamp.
+        Idempotent: marking an already-read notification succeeds without error.
+      operationId: markNotificationAsRead
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Notification UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /notifications/{id}/dismiss:
+    patch:
+      summary: Dismiss (delete) a notification
+      description: |
+        Soft-delete a notification by marking is_dismissed=true and setting dismissed_at.
+        The notification remains in the database for audit purposes but is hidden from user-facing lists by default.
+        Idempotent: dismissing an already-dismissed notification succeeds without error.
+      operationId: dismissNotification
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Notification UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification dismissed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /notifications/dismiss-all:
+    post:
+      summary: Dismiss all unread notifications
+      description: |
+        Bulk operation to dismiss all unread, non-dismissed notifications for the current user.
+        Updates all matching notifications with is_dismissed=true and dismissed_at.
+      operationId: dismissAllNotifications
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: All notifications dismissed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dismissedCount:
+                    type: integer
+                    description: Number of notifications dismissed
+                example:
+                  dismissedCount: 15
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /notifications/unread-count:
+    get:
+      summary: Get count of unread notifications
+      description: |
+        Returns the number of unread, non-dismissed notifications for the current user.
+        Useful for badge counts in UI (notification bell, etc.).
+      operationId: getUnreadCount
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Unread count retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unreadCount:
+                    type: integer
+                    minimum: 0
+                example:
+                  unreadCount: 3
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /notifications/dnd:
+    post:
+      summary: Enable Do Not Disturb mode
+      description: |
+        Activates Do Not Disturb mode for the specified duration.
+        While DND is active, notifications are created but not delivered to the device.
+        DND can be cancelled early via the DELETE method on this path.
+      operationId: enableDND
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - durationMinutes
+              properties:
+                durationMinutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 1440
+                  description: Duration of DND mode in minutes (1 to 1440 = 1 day)
+                  example: 60
+            examples:
+              15Minutes:
+                value:
+                  durationMinutes: 15
+              1Hour:
+                value:
+                  durationMinutes: 60
+              4Hours:
+                value:
+                  durationMinutes: 240
+              UntilTomorrow:
+                value:
+                  durationMinutes: 1440
+      responses:
+        '200':
+          description: DND mode enabled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dndUntil:
+                    type: string
+                    format: date-time
+                    description: ISO8601 timestamp when DND expires
+                  durationMinutes:
+                    type: integer
+                example:
+                  dndUntil: '2026-06-03T15:00:00Z'
+                  durationMinutes: 60
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      summary: Disable Do Not Disturb mode
+      description: |
+        Cancels active Do Not Disturb mode immediately.
+        If DND is not currently active, returns 200 (idempotent).
+      operationId: disableDND
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: DND mode disabled (or was not active)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dndUntil:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Now null since DND is disabled
+                example:
+                  dndUntil: null
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /notifications/stream:
+    get:
+      summary: Subscribe to real-time notification events (SSE)
+      description: |
+        Server-Sent Events stream. The server pushes a JSON event each time a new
+        notification is created and marked SENT for the authenticated user.
+        Clients should reconnect automatically on disconnect (EventSource handles this natively in browsers).
+
+        **Desktop (Electron renderer):** Use `@microsoft/fetch-event-source` to attach
+        the Authorization header (native `EventSource` does not support custom headers).
+
+        **Mobile (Expo React Native):** Use `react-native-sse` package which supports
+        custom headers via its `EventSource` polyfill.
+
+        Event payload is a `NotificationResponse` object.
+      operationId: streamNotifications
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: SSE stream established
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Newline-delimited SSE events. Each event `data` field is a JSON
+                  serialized `NotificationResponse`.
+              example: |
+                data: {"id":"550e8400-...","eventId":"...","eventTitle":"Team Meeting","status":"SENT",...}
+
+                data: {"id":"660f9500-...","eventId":"...","eventTitle":"Dentist","status":"SENT",...}
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /notifications/dnd/status:
+    get:
+      summary: Get current DND status
+      description: |
+        Returns whether Do Not Disturb is currently active and until when.
+      operationId: getDNDStatus
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: DND status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isActive:
+                    type: boolean
+                    description: True if DND is currently enabled
+                  dndUntil:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: ISO8601 timestamp when DND expires, or null if inactive
+                  remainingMinutes:
+                    type: integer
+                    nullable: true
+                    description: Minutes remaining until DND expires, or null if inactive
+                example:
+                  isActive: true
+                  dndUntil: '2026-06-03T15:00:00Z'
+                  remainingMinutes: 45
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /notifications/analytics/summary:
+    get:
+      summary: Get notification analytics summary
+      description: |
+        Retrieve aggregate statistics on notification delivery and engagement.
+        Useful for dashboards and analytics. Supports date range filtering.
+      operationId: getAnalyticsSummary
+      tags:
+        - Analytics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          description: Start date (ISO8601) for analytics window
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: End date (ISO8601) for analytics window
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Analytics summary retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSent:
+                    type: integer
+                    description: Total notifications sent (status=SENT)
+                  totalFailed:
+                    type: integer
+                    description: Total notifications with failed delivery (status=FAILED)
+                  totalPending:
+                    type: integer
+                    description: Total notifications still pending delivery (status=PENDING)
+                  totalRead:
+                    type: integer
+                    description: Total notifications marked as read (is_read=true)
+                  totalDismissed:
+                    type: integer
+                    description: Total notifications dismissed (is_dismissed=true)
+                  successRate:
+                    type: number
+                    format: double
+                    description: Percentage of sent notifications (0.0 to 1.0)
+                    minimum: 0
+                    maximum: 1
+                  readRate:
+                    type: number
+                    format: double
+                    description: Percentage of sent notifications that were read (0.0 to 1.0)
+                    minimum: 0
+                    maximum: 1
+                  dismissRate:
+                    type: number
+                    format: double
+                    description: Percentage of sent notifications that were dismissed (0.0 to 1.0)
+                    minimum: 0
+                    maximum: 1
+                  averageTimeToReadSeconds:
+                    type: number
+                    format: double
+                    nullable: true
+                    description: Average seconds from sent_at to read_at (null if no reads)
+                example:
+                  totalSent: 1250
+                  totalFailed: 5
+                  totalPending: 0
+                  totalRead: 850
+                  totalDismissed: 150
+                  successRate: 0.996
+                  readRate: 0.68
+                  dismissRate: 0.12
+                  averageTimeToReadSeconds: 245.5
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /notifications/analytics/by-day:
+    get:
+      summary: Get notification metrics grouped by day
+      description: |
+        Retrieve notification metrics broken down by calendar day.
+        Useful for trend analysis and charts.
+      operationId: getAnalyticsByDay
+      tags:
+        - Analytics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          description: Start date (ISO8601)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: End date (ISO8601)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Daily analytics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        sent:
+                          type: integer
+                        read:
+                          type: integer
+                        dismissed:
+                          type: integer
+                        failed:
+                          type: integer
+                example:
+                  data:
+                    - date: '2026-06-01'
+                      sent: 145
+                      read: 102
+                      dismissed: 25
+                      failed: 0
+                    - date: '2026-06-02'
+                      sent: 180
+                      read: 125
+                      dismissed: 30
+                      failed: 2
+                    - date: '2026-06-03'
+                      sent: 165
+                      read: 95
+                      dismissed: 20
+                      failed: 1
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  schemas:
+    NotificationResponse:
+      type: object
+      required:
+        - id
+        - eventId
+        - eventTitle
+        - eventStartAt
+        - status
+        - sentAt
+        - isRead
+        - readAt
+        - isDismissed
+        - dismissedAt
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique notification identifier
+        eventId:
+          type: string
+          format: uuid
+          description: UUID of the event this notification refers to
+        eventTitle:
+          type: string
+          description: Event title (denormalized for display convenience)
+        eventStartAt:
+          type: string
+          format: date-time
+          description: Event start time (ISO8601)
+        status:
+          type: string
+          enum: [PENDING, SENT, FAILED]
+          description: Delivery status
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When notification was sent to device (null if still pending or failed)
+        isRead:
+          type: boolean
+          description: Whether user has opened this notification in the app
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When user marked notification as read (null if not yet read)
+        isDismissed:
+          type: boolean
+          description: Whether user has dismissed this notification
+        dismissedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When user dismissed this notification (null if not dismissed)
+        createdAt:
+          type: string
+          format: date-time
+          description: When notification was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When notification was last modified
+
+  responses:
+    UnauthorizedError:
+      description: Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: unauthorized
+              message:
+                type: string
+                example: Invalid or missing authentication token
+
+    BadRequestError:
+      description: Invalid request parameters or body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: validation_error
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                    message:
+                      type: string
+            example:
+              error: validation_error
+              details:
+                - field: durationMinutes
+                  message: durationMinutes must be between 1 and 1440
+
+    NotFoundError:
+      description: Notification not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: not_found
+              message:
+                type: string
+                example: Notification 550e8400-e29b-41d4-a716-446655440000 not found
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from /api/auth/login
+
+tags:
+  - name: Notifications
+    description: Notification retrieval, management, and state transitions
+  - name: Analytics
+    description: Notification metrics and statistics
