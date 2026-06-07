@@ -18,7 +18,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
           context: ./backend
@@ -27,3 +27,12 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/my-calendar-backend:${{ github.event.release.tag_name }}
             ${{ secrets.DOCKERHUB_USERNAME }}/my-calendar-backend:latest
+
+      - name: Build and push flyway
+        uses: docker/build-push-action@v6
+        with:
+          context: ./db
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/my-calendar-flyway:${{ github.event.release.tag_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/my-calendar-flyway:latest

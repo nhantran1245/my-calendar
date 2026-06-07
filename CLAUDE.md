@@ -12,12 +12,17 @@ Monorepo with four main layers:
 
 ```
 my-calendar/
+├── .github/
+│   └── workflows/
+│       └── publish-backend.yml   # Builds and pushes Docker images on release
 ├── backend/          # NestJS REST API + cron-based reminder engine
 │   └── src/
 │       ├── events/   # CRUD — Event entity, service, controller, DTOs
 │       └── reminders/# Cron job (every minute) that fires reminder alerts
 ├── db/
+│   ├── Dockerfile    # Flyway image — bakes migrations into the image
 │   └── migrations/   # Flyway SQL migrations (V{n}__{desc}.sql)
+├── deployment/       # Deployment guides (GCP, mobile, etc.)
 ├── desktop/          # Electron + React + Vite (macOS app)
 │   └── src/
 │       ├── main.ts   # Electron main process
@@ -90,7 +95,7 @@ Set `VITE_API_URL` in `desktop/.env`.
 
 ## Key Conventions
 
-- **Migrations**: Never modify an existing Flyway file after it has been applied. Always add a new `V{n}__{description}.sql`. The backend sets `synchronize: false` — TypeORM never auto-migrates.
+- **Migrations**: Never modify an existing Flyway file after it has been applied. Always add a new `V{n}__{description}.sql`. The backend sets `synchronize: false` — TypeORM never auto-migrates. Migrations are baked into the Flyway Docker image (`db/Dockerfile`) — run `docker compose build flyway` after adding a new migration file.
 - **TypeORM entity columns**: Use `camelCase` properties with explicit `name:` snake_case column names (e.g. `@Column({ name: 'start_at' }) startAt`).
 - **DTOs**: All controller input goes through `class-validator` DTOs with `ValidationPipe(whitelist: true)`.
 - **API prefix**: All backend routes are under `/api` (set globally in `main.ts`).

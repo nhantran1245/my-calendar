@@ -86,7 +86,14 @@ V2__add_categories.sql
 
 **Never modify an existing migration file once it has been applied.**
 
-When Docker Compose starts, Flyway automatically applies any pending migrations before the backend boots.
+Migrations are baked into the Flyway Docker image (`db/Dockerfile`). When Docker Compose starts, Flyway automatically applies any pending migrations before the backend boots.
+
+After adding a new migration file, rebuild the Flyway image:
+
+```bash
+docker compose build flyway
+docker compose up -d
+```
 
 To run migrations manually (requires a running PostgreSQL instance):
 
@@ -100,12 +107,17 @@ docker compose run --rm flyway migrate
 
 ```
 my-calendar/
+├── .github/
+│   └── workflows/
+│       └── publish-backend.yml   # Publishes Docker images on GitHub release
 ├── backend/          # NestJS API
 │   └── src/
 │       ├── events/   # CRUD for calendar events
 │       └── reminders/# Cron job that fires reminder notifications
 ├── db/
+│   ├── Dockerfile    # Flyway image with migrations baked in
 │   └── migrations/   # Flyway SQL migration files
+├── deployment/       # Deployment guides and configs
 ├── desktop/          # Electron + React (macOS app)
 │   └── src/
 │       ├── main.ts   # Electron main process
@@ -118,6 +130,19 @@ my-calendar/
 │       └── screens/
 └── docker-compose.yml
 ```
+
+---
+
+## Publishing Docker images
+
+Images are published automatically to Docker Hub when a GitHub release is created:
+
+- `<username>/my-calendar-backend:<version>` + `latest`
+- `<username>/my-calendar-flyway:<version>` + `latest`
+
+To publish, create a release on GitHub with a tag (e.g. `v1.0.0`).
+
+Required GitHub secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
 
 ---
 

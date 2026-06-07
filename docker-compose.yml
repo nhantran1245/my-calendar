@@ -19,7 +19,8 @@ services:
       retries: 10
 
   flyway:
-    image: flyway/flyway:10
+    build:
+      context: ./db
     platform: linux/amd64
     container_name: my-calendar-flyway
     depends_on:
@@ -31,8 +32,6 @@ services:
       FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:-calendar_pass}
       FLYWAY_LOCATIONS: filesystem:/flyway/sql
       FLYWAY_BASELINE_ON_MIGRATE: "true"
-    volumes:
-      - ./db/migrations:/flyway/sql
     command: migrate
 
   backend:
