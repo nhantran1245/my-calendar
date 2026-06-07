@@ -19,6 +19,14 @@ export const MONTH_NAMES_SHORT = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ] as const;
 export const WEEKDAY_NAMES_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const;
+export const WEEKDAY_NAMES_FULL = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+] as const;
+
+export const DAY_VIEW_START_HOUR = 6;   // 6am
+export const DAY_VIEW_END_HOUR   = 22;  // 10pm
+export const DAY_VIEW_HOUR_HEIGHT = 64; // px per hour
+export const DAY_VIEW_GUTTER_WIDTH = 52; // px for time label column
 
 export const CELL_HEIGHT = 72;
 export const EVENT_PILL_MAX_CHARS = 12;
