@@ -24,6 +24,15 @@
       "expo-notifications",
       "expo-font",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "7f1913dc-4489-4d33-be4b-6fbe793951c3"
+      }
+    },
+    "owner": "nhantran1245"
   }
 }
