@@ -60,35 +60,62 @@ docker build -t <your-dockerhub-username>/my-calendar-backend:latest \
   --target production ./backend
 docker push <your-dockerhub-username>/my-calendar-backend:latest
 
+# Build and push flyway (migrations baked in)
+docker build -t <your-dockerhub-username>/my-calendar-flyway:latest ./db
+docker push <your-dockerhub-username>/my-calendar-flyway:latest
+
 # Build and push backup sidecar
 docker build -t <your-dockerhub-username>/my-calendar-backup:latest \
   ./deployment/backup
 docker push <your-dockerhub-username>/my-calendar-backup:latest
 ```
 
-> Flyway uses the official `flyway/flyway:10` image — no custom build needed.
-> The `db/migrations/` folder is copied to the VM directly (see step 5).
+> After publishing a GitHub release, the workflow builds and pushes all images automatically — manual builds above are only needed outside of a release.
 
 ### 4. Configure the VM
 
 SSH into the VM and create the app directory:
 
 ```bash
-mkdir -p ~/my-calendar/db/migrations
 mkdir -p ~/my-calendar/secrets
+cd ~/my-calendar
 ```
 
-Copy your files to the VM:
+Create the `.env` file:
 
 ```bash
-# From your local machine
-gcloud compute scp .env.production <VM_NAME>:~/my-calendar/.env
-gcloud compute scp -r db/migrations/ <VM_NAME>:~/my-calendar/db/
-gcloud compute scp docker-compose.prod.yml <VM_NAME>:~/my-calendar/docker-compose.yml
-gcloud compute scp /path/to/service-account.json <VM_NAME>:~/my-calendar/secrets/
+nano .env
 ```
 
-### 5. Create `docker-compose.prod.yml`
+Paste and fill in your values:
+
+```
+POSTGRES_DB=my_calendar
+POSTGRES_USER=calendar_user
+POSTGRES_PASSWORD=<strong-password>
+
+BACKUP_GOOGLE_DRIVE_FOLDER_ID=<your-drive-folder-id>
+BACKUP_SCHEDULE_TIME=02:00
+BACKUP_RETENTION_DAYS=7
+```
+
+Save with `Ctrl+O` → `Enter` → `Ctrl+X`.
+
+Create the service account key file:
+
+```bash
+nano ~/my-calendar/secrets/service-account.json
+```
+
+Paste the full contents of your Google service account JSON key, then save.
+
+### 5. Create `docker-compose.yml`
+
+```bash
+nano ~/my-calendar/docker-compose.yml
+```
+
+Paste:
 
 ```yaml
 version: '3.8'
@@ -111,7 +138,7 @@ services:
     restart: unless-stopped
 
   flyway:
-    image: flyway/flyway:10
+    image: nhantran1245/my-calendar-flyway:latest
     platform: linux/amd64
     depends_on:
       postgres:
@@ -122,12 +149,10 @@ services:
       FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
       FLYWAY_LOCATIONS: filesystem:/flyway/sql
       FLYWAY_BASELINE_ON_MIGRATE: "true"
-    volumes:
-      - ./db/migrations:/flyway/sql
     command: migrate
 
   backend:
-    image: <your-dockerhub-username>/my-calendar-backend:latest
+    image: nhantran1245/my-calendar-backend:latest
     container_name: my-calendar-backend
     depends_on:
       flyway:
@@ -145,57 +170,41 @@ services:
       - "3000:3000"
     restart: unless-stopped
 
-  backup:
-    image: <your-dockerhub-username>/my-calendar-backup:latest
-    container_name: my-calendar-backup
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      BACKUP_GOOGLE_DRIVE_FOLDER_ID: ${BACKUP_GOOGLE_DRIVE_FOLDER_ID}
-      BACKUP_SERVICE_ACCOUNT_JSON: /secrets/service-account.json
-      BACKUP_SCHEDULE_TIME: ${BACKUP_SCHEDULE_TIME:-02:00}
-      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
-      TZ: Asia/Ho_Chi_Minh
-    volumes:
-      - ./secrets/service-account.json:/secrets/service-account.json:ro
-    restart: unless-stopped
+  # backup:
+  #   image: nhantran1245/my-calendar-backup:latest
+  #   container_name: my-calendar-backup
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     POSTGRES_HOST: postgres
+  #     POSTGRES_PORT: 5432
+  #     POSTGRES_DB: ${POSTGRES_DB}
+  #     POSTGRES_USER: ${POSTGRES_USER}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #     BACKUP_GOOGLE_DRIVE_FOLDER_ID: ${BACKUP_GOOGLE_DRIVE_FOLDER_ID}
+  #     BACKUP_SERVICE_ACCOUNT_JSON: /secrets/service-account.json
+  #     BACKUP_SCHEDULE_TIME: ${BACKUP_SCHEDULE_TIME:-02:00}
+  #     BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+  #     TZ: Asia/Ho_Chi_Minh
+  #   volumes:
+  #     - ./secrets/service-account.json:/secrets/service-account.json:ro
+  #   restart: unless-stopped
 
 volumes:
   postgres_data:
 ```
 
-### 6. Create `.env.production`
-
-```
-POSTGRES_DB=my_calendar
-POSTGRES_USER=calendar_user
-POSTGRES_PASSWORD=<strong-password>
-
-BACKUP_GOOGLE_DRIVE_FOLDER_ID=<your-drive-folder-id>
-BACKUP_SCHEDULE_TIME=02:00
-BACKUP_RETENTION_DAYS=7
-```
-
-> Never commit this file. Keep it only on the VM.
-
-### 7. Start the stack
-
-SSH into the VM:
+### 6. Start the stack
 
 ```bash
 cd ~/my-calendar
-docker compose --env-file .env pull
-docker compose --env-file .env up -d
+docker compose pull
+docker compose up -d
 docker compose logs -f
 ```
 
-### 8. Get your public URL
+### 7. Get your public URL
 
 Your backend is accessible at:
 
@@ -211,7 +220,7 @@ curl http://<VM_EXTERNAL_IP>:3000/api/events
 
 To use HTTPS, put Nginx + Certbot in front of port 3000 (optional for a personal app).
 
-### 9. Note the URL — you will need it in the next steps
+### 8. Note the URL — you will need it in the next steps
 
 ```
 EXPO_PUBLIC_API_URL=http://<VM_EXTERNAL_IP>:3000/api
@@ -219,22 +228,26 @@ EXPO_PUBLIC_API_URL=http://<VM_EXTERNAL_IP>:3000/api
 
 ---
 
-## Redeploying after code changes
+## Redeploying after changes
 
-On your local machine:
+The recommended way is to **publish a GitHub release** — the workflow builds and pushes all images automatically.
 
-```bash
-docker build -t <your-dockerhub-username>/my-calendar-backend:latest \
-  --target production ./backend
-docker push <your-dockerhub-username>/my-calendar-backend:latest
-```
-
-On the VM:
+Then on the VM:
 
 ```bash
 cd ~/my-calendar
-docker compose pull backend
-docker compose up -d backend
+docker compose pull
+docker compose up -d
+```
+
+### After adding a new migration
+
+A new migration changes the Flyway image. On the VM, restart Flyway to apply it:
+
+```bash
+docker compose pull flyway
+docker compose up -d flyway
+# flyway runs and exits once migrations are applied; backend picks up automatically
 ```
 
 ---
@@ -258,6 +271,6 @@ docker compose up -d backend
 614 MB RAM is tight. If the backend crashes with OOM, limit Node memory:
 
 ```yaml
-# in docker-compose.prod.yml under backend environment:
+# in docker-compose.yml under backend environment:
 NODE_OPTIONS: --max-old-space-size=256
 ```
