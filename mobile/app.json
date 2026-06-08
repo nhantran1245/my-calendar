@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "mycalendar",
+    "icon": "./assets/logo.png",
     "platforms": [
       "ios",
       "android"
@@ -16,7 +17,8 @@
     "android": {
       "package": "com.personal.mycalendar",
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#1a1a1a"
       }
     },
     "plugins": [
