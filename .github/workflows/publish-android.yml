@@ -37,10 +37,23 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Cache Gradle distributions
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: gradle-8.8-all
+
+      - name: Pre-download Gradle 8.8
+        run: |
+          curl --retry 5 --retry-delay 5 --connect-timeout 30 -L \
+            https://services.gradle.org/distributions/gradle-8.8-all.zip \
+            -o /tmp/gradle-8.8-all.zip
+
       - name: Build APK
         working-directory: mobile
         env:
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m -Dorg.gradle.daemon=false -Dorg.gradle.internal.http.socketTimeout=60000 -Dorg.gradle.internal.http.connectionTimeout=60000"
         run: |
           eas build \
             --platform android \
