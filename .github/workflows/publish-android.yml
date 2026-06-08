@@ -29,6 +29,12 @@ jobs:
         working-directory: mobile
         run: npm install
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Build APK
         working-directory: mobile
         env:
@@ -38,6 +44,7 @@ jobs:
             --platform android \
             --profile preview \
             --non-interactive \
+            --local \
             --output ../build/my-calendar-${{ github.event.release.tag_name }}.apk
 
       - name: Upload APK to release
