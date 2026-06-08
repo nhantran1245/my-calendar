@@ -57,7 +57,7 @@ jobs:
         working-directory: mobile
         env:
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
-          GRADLE_USER_HOME: /root/.gradle
+          GRADLE_USER_HOME: /home/runner/.gradle
           GRADLE_OPTS: "-Xmx4096m -Dorg.gradle.daemon=false"
           EAS_BUILD_SKIP_DOCTOR: "1"
         run: |
